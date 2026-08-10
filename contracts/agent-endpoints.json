@@ -1,0 +1,15 @@
+{
+  "endpoints": [
+    {"method": "POST", "path": "/agent/v1/challenges/list"},
+    {"method": "POST", "path": "/agent/v1/challenges/detail"},
+    {"method": "POST", "path": "/agent/v1/attachments/download"},
+    {"method": "POST", "path": "/agent/v1/attachments/dynamic/status"},
+    {"method": "POST", "path": "/agent/v1/attachments/dynamic/download"},
+    {"method": "POST", "path": "/agent/v1/runtimes/start"},
+    {"method": "POST", "path": "/agent/v1/runtimes/inspect"},
+    {"method": "POST", "path": "/agent/v1/runtimes/stop"},
+    {"method": "POST", "path": "/agent/v1/runtimes/extend"},
+    {"method": "POST", "path": "/agent/v1/submissions/flag"},
+    {"method": "POST", "path": "/agent/v1/rank"}
+  ]
+}
