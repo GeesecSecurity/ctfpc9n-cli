@@ -16,6 +16,7 @@ release: verify
 	mkdir -p bin
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o bin/ctfpc9n-cli-windows-amd64.exe ./cmd/ctfpc9n-cli
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/ctfpc9n-cli-linux-amd64 ./cmd/ctfpc9n-cli
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -o bin/ctfpc9n-cli-linux-arm64 ./cmd/ctfpc9n-cli
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -o bin/ctfpc9n-cli-darwin-amd64 ./cmd/ctfpc9n-cli
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -o bin/ctfpc9n-cli-darwin-arm64 ./cmd/ctfpc9n-cli
 

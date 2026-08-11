@@ -118,6 +118,7 @@ Release assets are:
 | Platform | Asset |
 | --- | --- |
 | Linux x86_64 | `ctfpc9n-cli-linux-amd64` |
+| Linux ARM64 | `ctfpc9n-cli-linux-arm64` |
 | macOS Intel | `ctfpc9n-cli-darwin-amd64` |
 | macOS Apple Silicon | `ctfpc9n-cli-darwin-arm64` |
 | Windows x86_64 | `ctfpc9n-cli-windows-amd64.exe` |
