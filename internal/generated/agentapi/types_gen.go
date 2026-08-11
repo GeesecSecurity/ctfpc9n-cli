@@ -1985,8 +1985,7 @@ type MatchBase struct {
 	WriteupRequire        *bool   `json:"writeup_require,optional"`                 //是否需要writeup
 	Roles                 []Role  `json:"roles,optional"`                           //比赛角色
 	Mode                  *uint64 `json:"mode,optional"`                            //模式1-ctf 2-awdp 3-渗透 4-awdp 5-理论赛(Ctf)
-	ParticipantMode       *uint64 `json:"participantMode,optional"`                 //参赛方式 1-human 2-agent-only 3-mixed（仅 CTF）
-	AgentMCPEnabled       *bool   `json:"agentMcpEnabled,optional"`                 //是否启用 MCP sidecar，仅 participantMode=2/3 可用
+	ParticipantMode       *uint64 `json:"participantMode,optional"`                 //参赛方式 1-human 2-agent-only 3-mixed
 	HasTheory             *bool   `json:"hasTheory,optional"`                       //是否有理论竞赛模块
 	AWDPRoundTime         *uint64 `json:"awdp_round_time,omitempty,optional"`       //轮次时间 分钟为单位
 	AWDPRoundStartTime    *uint64 `json:"awdp_round_start_time,omitempty,optional"` //轮次开始时间
@@ -2114,8 +2113,7 @@ type PartialMatchBase struct {
 	WriteupRequire        bool   `json:"writeup_require"`                 //是否需要writeup
 	Roles                 []Role `json:"roles"`                           //比赛角色
 	Mode                  uint64 `json:"mode"`                            //模式 1->ctf 2->awdp
-	ParticipantMode       uint64 `json:"participantMode"`                 //参赛方式 1-human 2-agent-only 3-mixed（仅 CTF）
-	AgentMCPEnabled       bool   `json:"agentMcpEnabled"`                 //是否启用 MCP sidecar，仅 participantMode=2/3 可用
+	ParticipantMode       uint64 `json:"participantMode"`                 //参赛方式 1-human 2-agent-only 3-mixed
 	AWDPRoundTime         uint64 `json:"awdp_round_time,omitempty"`       //轮次时间 分钟为单位
 	AWDPRoundStartTime    uint64 `json:"awdp_round_start_time,omitempty"` //轮次开始时间
 	AWDPRoundEndTime      uint64 `json:"awdp_round_end_time,omitempty"`   //轮次结束时间
@@ -3375,8 +3373,9 @@ type GetInformationLogResponse struct {
 }
 
 type GetMatchSettingResponse struct {
-	MatchSetting MatchBase `json:"match_setting"`
-	MimEnable    bool      `json:"mim_enable"`
+	MatchSetting           MatchBase `json:"match_setting"`
+	MimEnable              bool      `json:"mim_enable"`
+	PaidCompetitionManaged bool      `json:"paidCompetitionManaged"`
 }
 
 type GetMatchTeamAndUserCountResponse struct {
