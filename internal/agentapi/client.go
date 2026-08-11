@@ -13,7 +13,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -127,7 +126,7 @@ func (client *Client) Call(ctx context.Context, endpoint generated.Endpoint, req
 		return &APIError{HTTPStatus: resp.StatusCode, Message: nonJSONMessage(data)}
 	}
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices || (envelope.Code != 0 && envelope.Code != http.StatusOK) {
-		return &APIError{HTTPStatus: resp.StatusCode, Code: envelope.Code, Message: redact(envelope.Msg, append(sensitive, client.token)...)}
+		return &APIError{HTTPStatus: resp.StatusCode, Code: envelope.Code, Message: Redact(envelope.Msg, append(sensitive, client.token)...)}
 	}
 	if response == nil || len(envelope.Data) == 0 || string(envelope.Data) == "null" {
 		return nil
@@ -191,7 +190,7 @@ func decodeDownloadError(response *http.Response, token string) error {
 		Msg  string `json:"msg"`
 	}
 	if json.Unmarshal(data, &envelope) == nil {
-		return &APIError{HTTPStatus: response.StatusCode, Code: envelope.Code, Message: redact(envelope.Msg, token)}
+		return &APIError{HTTPStatus: response.StatusCode, Code: envelope.Code, Message: Redact(envelope.Msg, token)}
 	}
 	return &APIError{HTTPStatus: response.StatusCode, Message: nonJSONMessage(data)}
 }
@@ -267,7 +266,7 @@ func nonJSONMessage(data []byte) string {
 	return "response is not valid JSON: " + message
 }
 
-func redact(message string, values ...string) string {
+func Redact(message string, values ...string) string {
 	for _, value := range values {
 		value = strings.TrimSpace(value)
 		if value != "" {
@@ -302,16 +301,4 @@ func redactMarkedValue(message, marker string) string {
 		searchFrom = valueStart + len("[redacted]")
 	}
 	return message
-}
-
-func ContentLength(response *http.Response) int64 {
-	value := strings.TrimSpace(response.Header.Get("Content-Length"))
-	if value == "" {
-		return -1
-	}
-	parsed, err := strconv.ParseInt(value, 10, 64)
-	if err != nil || parsed < 0 {
-		return -1
-	}
-	return parsed
 }

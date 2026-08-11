@@ -222,7 +222,7 @@ func writeFailure(stdout io.Writer, command string, cause error) {
 }
 
 func classifyError(cause error) resultError {
-	message := redactErrorMessage(cause.Error())
+	message := agentapi.Redact(cause.Error())
 	if errors.Is(cause, errUsage) {
 		return resultError{Code: "USAGE", Message: message}
 	}
@@ -257,37 +257,6 @@ func classifyError(cause error) resultError {
 		return resultError{Code: "UNAVAILABLE", Message: message, Retryable: true}
 	}
 	return resultError{Code: "INTERNAL", Message: message}
-}
-
-func redactErrorMessage(message string) string {
-	for _, key := range []string{"token", "flag", "cookie", "password", "secret"} {
-		message = redactErrorValue(message, key+"=")
-		message = redactErrorValue(message, key+":")
-	}
-	return message
-}
-
-func redactErrorValue(message, marker string) string {
-	searchFrom := 0
-	for searchFrom < len(message) {
-		index := strings.Index(strings.ToLower(message[searchFrom:]), marker)
-		if index < 0 {
-			break
-		}
-		index += searchFrom
-		valueStart := index + len(marker)
-		if strings.HasPrefix(message[valueStart:], "[redacted]") {
-			searchFrom = valueStart + len("[redacted]")
-			continue
-		}
-		end := valueStart
-		for end < len(message) && !strings.ContainsRune(" &\t\r\n\"'", rune(message[end])) {
-			end++
-		}
-		message = message[:valueStart] + "[redacted]" + message[end:]
-		searchFrom = valueStart + len("[redacted]")
-	}
-	return message
 }
 
 func usagef(format string, args ...any) error {

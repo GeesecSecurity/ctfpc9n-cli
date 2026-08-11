@@ -2,7 +2,6 @@ package cli
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"reflect"
 	"sort"
@@ -342,13 +341,4 @@ func jsonField(field reflect.StructField) (string, bool) {
 		}
 	}
 	return name, optional
-}
-
-func findCommand(path string) (commandSpec, error) {
-	for _, spec := range commandCatalog() {
-		if spec.Path == path {
-			return spec, nil
-		}
-	}
-	return commandSpec{}, fmt.Errorf("unknown command %q", path)
 }
