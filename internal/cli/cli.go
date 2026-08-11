@@ -19,6 +19,12 @@ import (
 
 const schemaVersion = "v1"
 
+const (
+	defaultHTTPTimeout = 15 * time.Second
+	maxWaitSeconds     = 30
+	waitTimeoutGrace   = 5 * time.Second
+)
+
 var (
 	errUsage = errors.New("invalid command arguments")
 	errAuth  = errors.New("authentication required")
@@ -29,6 +35,7 @@ type Options struct {
 	APIBase     string
 	APIBaseSet  bool
 	Timeout     time.Duration
+	TimeoutSet  bool
 	InsecureTLS bool
 }
 
@@ -70,7 +77,7 @@ func Run(args []string, stdin io.Reader, stdout io.Writer) error {
 }
 
 func extractOptions(args []string) (Options, []string, error) {
-	options := Options{Timeout: 15 * time.Second}
+	options := Options{Timeout: defaultHTTPTimeout}
 	remaining := make([]string, 0, len(args))
 	for index := 0; index < len(args); index++ {
 		argument := args[index]
@@ -109,6 +116,7 @@ func extractOptions(args []string) (Options, []string, error) {
 				return Options{}, nil, usagef("--timeout must be a positive duration")
 			}
 			options.Timeout = timeout
+			options.TimeoutSet = true
 		case "--insecure-skip-tls-verify", "-K":
 			if inline {
 				remaining = append(remaining, argument)
@@ -136,7 +144,30 @@ func runWithOptions(options Options, args []string, stdin io.Reader, stdout io.W
 	if err != nil {
 		return err
 	}
+	applyWaitTimeout(&options, command, schema)
 	return runCommand(context.Background(), options, schema, command, stdin, stdout)
+}
+
+func applyWaitTimeout(options *Options, command string, schema *commandSchema) {
+	if options.TimeoutSet {
+		return
+	}
+	var waitSeconds uint64
+	switch command {
+	case "attachment dynamic status":
+		waitSeconds = schema.Attachment.Dynamic.Status.WaitSeconds
+	case "runtime inspect":
+		waitSeconds = schema.Runtime.Inspect.WaitSeconds
+	default:
+		return
+	}
+	if waitSeconds > maxWaitSeconds {
+		return
+	}
+	minimum := time.Duration(waitSeconds)*time.Second + waitTimeoutGrace
+	if minimum > options.Timeout {
+		options.Timeout = minimum
+	}
 }
 
 func parseCommand(args []string) (*commandSchema, string, error) {
@@ -286,7 +317,7 @@ func isPage(value uint64, name string) error {
 }
 
 func isWait(value uint64) error {
-	if value > 30 {
+	if value > maxWaitSeconds {
 		return usagef("--wait-seconds must be between 0 and 30")
 	}
 	return nil

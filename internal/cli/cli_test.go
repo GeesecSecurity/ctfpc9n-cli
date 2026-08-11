@@ -10,9 +10,39 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"ctfpc9n-cli/internal/session"
 )
+
+func TestWaitCommandsExtendOnlyTheImplicitHTTPTimeout(t *testing.T) {
+	cases := []struct {
+		name       string
+		command    string
+		wait       uint64
+		timeoutSet bool
+		want       time.Duration
+	}{
+		{name: "runtime inspect", command: "runtime inspect", wait: 30, want: 35 * time.Second},
+		{name: "dynamic attachment status", command: "attachment dynamic status", wait: 30, want: 35 * time.Second},
+		{name: "zero wait retains default", command: "runtime inspect", want: defaultHTTPTimeout},
+		{name: "explicit timeout wins", command: "runtime inspect", wait: 30, timeoutSet: true, want: defaultHTTPTimeout},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			options := Options{Timeout: defaultHTTPTimeout, TimeoutSet: testCase.timeoutSet}
+			schema := new(commandSchema)
+			schema.Runtime.Inspect.WaitSeconds = testCase.wait
+			schema.Attachment.Dynamic.Status.WaitSeconds = testCase.wait
+
+			applyWaitTimeout(&options, testCase.command, schema)
+
+			if options.Timeout != testCase.want {
+				t.Fatalf("timeout = %s, want %s", options.Timeout, testCase.want)
+			}
+		})
+	}
+}
 
 func TestAuthLoginValidatesTokenAndDoesNotPrintIt(t *testing.T) {
 	const token = "token-not-for-output"

@@ -132,7 +132,7 @@ func globalFlags(path string) []helpFlag {
 	}
 	flags := []helpFlag{
 		{Name: "--session", Description: "Named local session. Required for all commands other than help.", Required: requiresSession},
-		{Name: "--timeout", Description: "HTTP timeout. Defaults to 15s."},
+		{Name: "--timeout", Description: "HTTP timeout. Defaults to 15s; wait commands use server wait plus 5s unless explicitly set."},
 		{Name: "--insecure-skip-tls-verify, -K", Description: "Disable TLS certificate verification for this command."},
 	}
 	if path == "auth login" {
