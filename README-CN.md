@@ -22,9 +22,9 @@ Agent 可以在比赛过程中使用 `ctfpc9n-cli`：
 选择当前主机对应的发布产物，下载 SHA256SUMS，校验产物的校验和，再以 0755 权限安装到
 $HOME/.local/bin/ctfpc9n-cli。npx 可用时，使用以下命令安装 Agent Skill：
 npx skills@latest add -g https://github.com/GeesecSecurity/ctfpc9n-cli.git --skill ctfpc9n-cli -y
-否则，克隆 https://github.com/GeesecSecurity/ctfpc9n-cli.git，并将其中的
-skills/ctfpc9n-cli/SKILL.md 复制到 ~/.agents/skills/ctfpc9n-cli/SKILL.md。
-执行 ctfpc9n-cli help，并通过 npx skills list 或检查该文件路径来验证 Skill。不要认证，
+否则，下载 https://raw.githubusercontent.com/GeesecSecurity/ctfpc9n-cli/refs/heads/main/skills/ctfpc9n-cli/SKILL.md，
+创建 ~/.agents/skills/ctfpc9n-cli/，并将其保存为 SKILL.md。执行 ctfpc9n-cli help，并通过
+npx skills list 或检查该文件路径来验证 Skill。不要认证，
 不要索要 Token。无法确定发布产物或校验和时停止并报告错误，不要猜测。
 ```
 

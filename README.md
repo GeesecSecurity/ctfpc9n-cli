@@ -28,8 +28,8 @@ Select the release asset for this host, download its SHA256SUMS, verify the
 asset checksum, then install it as $HOME/.local/bin/ctfpc9n-cli with mode 0755.
 When npx is available, install the Agent Skill with:
 npx skills@latest add -g https://github.com/GeesecSecurity/ctfpc9n-cli.git --skill ctfpc9n-cli -y
-Otherwise clone https://github.com/GeesecSecurity/ctfpc9n-cli.git and copy its
-skills/ctfpc9n-cli/SKILL.md to ~/.agents/skills/ctfpc9n-cli/SKILL.md. Run
+Otherwise download https://raw.githubusercontent.com/GeesecSecurity/ctfpc9n-cli/refs/heads/main/skills/ctfpc9n-cli/SKILL.md,
+create ~/.agents/skills/ctfpc9n-cli/, and save it as SKILL.md. Run
 ctfpc9n-cli help and verify the Skill with npx skills list or that file path.
 Do not authenticate or ask for a token. Stop and report an error instead of
 guessing an asset or checksum.
