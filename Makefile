@@ -1,4 +1,4 @@
-.PHONY: ctfpc9n-cli release install check-goctl sync-contracts generate test verify clean
+.PHONY: ctfpc9n-cli release install check-goctl sync-contracts generate check test verify clean
 
 GOCTL_VERSION := 1.10.1
 BUILD_DIR := .build
@@ -8,11 +8,11 @@ CONTRACT := $(CONTRACT_DIR)/main.api
 MANIFEST := contracts/agent-endpoints.json
 GENERATED := internal/generated/agentapi
 
-ctfpc9n-cli: verify
+ctfpc9n-cli: test
 	mkdir -p bin
 	go build -o bin/ctfpc9n-cli ./cmd/ctfpc9n-cli
 
-release: verify
+release: test
 	mkdir -p bin
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o bin/ctfpc9n-cli-windows-amd64.exe ./cmd/ctfpc9n-cli
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/ctfpc9n-cli-linux-amd64 ./cmd/ctfpc9n-cli
@@ -45,12 +45,14 @@ $(GENERATOR): tools/generate/go.mod tools/generate/go.sum tools/generate/main.go
 	mkdir -p $(BUILD_DIR)
 	go build -C tools/generate -o ../../$(GENERATOR) .
 
-test: generate
+check:
 	go test -mod=readonly ./...
 	go vet -structtag=false ./...
 	go vet -C tools/generate ./...
 
-verify: test
+test: check
+
+verify: generate check
 
 clean:
 	rm -rf $(BUILD_DIR) bin

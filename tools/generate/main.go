@@ -31,6 +31,8 @@ type routeDefinition struct {
 	ContractPath string
 	MethodName   string
 	EndpointName string
+	RequestType  spec.Type
+	ResponseType spec.Type
 }
 
 func main() {
@@ -65,7 +67,11 @@ func generate(packageName, outputDir, manifestPath string) error {
 	if err != nil {
 		return err
 	}
-	types, err := gogen.BuildTypes(pl.Api.Types)
+	selectedTypes, err := selectTypes(pl.Api.Types, routes)
+	if err != nil {
+		return err
+	}
+	types, err := gogen.BuildTypes(selectedTypes)
 	if err != nil {
 		return fmt.Errorf("build API types: %w", err)
 	}
@@ -131,6 +137,7 @@ func collectRoutes(api *spec.ApiSpec, allowed map[string]struct{}) ([]routeDefin
 		}
 		routes = append(routes, routeDefinition{
 			Method: method, Path: relativePath, ContractPath: path, MethodName: name, EndpointName: "Endpoint" + name,
+			RequestType: route.RequestType, ResponseType: route.ResponseType,
 		})
 	}
 	if len(seen) != len(allowed) {
@@ -145,6 +152,73 @@ func collectRoutes(api *spec.ApiSpec, allowed map[string]struct{}) ([]routeDefin
 	}
 	sort.Slice(routes, func(i, j int) bool { return routes[i].MethodName < routes[j].MethodName })
 	return routes, nil
+}
+
+func selectTypes(types []spec.Type, routes []routeDefinition) ([]spec.Type, error) {
+	definitions := make(map[string]spec.DefineStruct, len(types))
+	for _, typ := range types {
+		definition, ok := typ.(spec.DefineStruct)
+		if !ok {
+			return nil, fmt.Errorf("unsupported API definition type %T", typ)
+		}
+		if _, exists := definitions[definition.Name()]; exists {
+			return nil, fmt.Errorf("duplicate API type %s", definition.Name())
+		}
+		definitions[definition.Name()] = definition
+	}
+
+	selected := make(map[string]struct{}, len(routes)*2)
+	var visit func(spec.Type) error
+	visit = func(typ spec.Type) error {
+		if typ == nil {
+			return nil
+		}
+		switch definition := typ.(type) {
+		case spec.DefineStruct:
+			name := definition.Name()
+			if _, exists := selected[name]; exists {
+				return nil
+			}
+			definition, exists := definitions[name]
+			if !exists {
+				return fmt.Errorf("referenced API type %s is missing", name)
+			}
+			selected[name] = struct{}{}
+			for _, member := range definition.Members {
+				if err := visit(member.Type); err != nil {
+					return err
+				}
+			}
+			return nil
+		case spec.PointerType:
+			return visit(definition.Type)
+		case spec.ArrayType:
+			return visit(definition.Value)
+		case spec.MapType:
+			return visit(definition.Value)
+		case spec.PrimitiveType, spec.InterfaceType:
+			return nil
+		default:
+			return fmt.Errorf("unsupported referenced API type %T", typ)
+		}
+	}
+
+	for _, route := range routes {
+		if err := visit(route.RequestType); err != nil {
+			return nil, err
+		}
+		if err := visit(route.ResponseType); err != nil {
+			return nil, err
+		}
+	}
+
+	result := make([]spec.Type, 0, len(selected))
+	for _, typ := range types {
+		if _, exists := selected[typ.Name()]; exists {
+			result = append(result, typ)
+		}
+	}
+	return result, nil
 }
 
 func exportedIdentifier(value string) string {

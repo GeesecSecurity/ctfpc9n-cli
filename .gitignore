@@ -1,2 +1,4 @@
 /.build/
 /bin/
+/contracts/runtime/
+/.drone.yml
