@@ -16,6 +16,7 @@ var (
 	EndpointAgentGetChallenge              = Endpoint{Name: "AgentGetChallenge", Method: "POST", Path: "/challenges/detail", ContractPath: "/agent/v1/challenges/detail"}
 	EndpointAgentGetDynamicAttachment      = Endpoint{Name: "AgentGetDynamicAttachment", Method: "POST", Path: "/attachments/dynamic/status", ContractPath: "/agent/v1/attachments/dynamic/status"}
 	EndpointAgentGetRank                   = Endpoint{Name: "AgentGetRank", Method: "POST", Path: "/rank", ContractPath: "/agent/v1/rank"}
+	EndpointAgentGetStageProgress          = Endpoint{Name: "AgentGetStageProgress", Method: "POST", Path: "/stage/progress", ContractPath: "/agent/v1/stage/progress"}
 	EndpointAgentInspectRuntime            = Endpoint{Name: "AgentInspectRuntime", Method: "POST", Path: "/runtimes/inspect", ContractPath: "/agent/v1/runtimes/inspect"}
 	EndpointAgentListChallenges            = Endpoint{Name: "AgentListChallenges", Method: "POST", Path: "/challenges/list", ContractPath: "/agent/v1/challenges/list"}
 	EndpointAgentStartRuntime              = Endpoint{Name: "AgentStartRuntime", Method: "POST", Path: "/runtimes/start", ContractPath: "/agent/v1/runtimes/start"}

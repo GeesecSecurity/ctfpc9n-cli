@@ -1,5 +1,6 @@
 {
   "endpoints": [
+    {"method": "POST", "path": "/agent/v1/stage/progress"},
     {"method": "POST", "path": "/agent/v1/challenges/list"},
     {"method": "POST", "path": "/agent/v1/challenges/detail"},
     {"method": "POST", "path": "/agent/v1/attachments/download"},

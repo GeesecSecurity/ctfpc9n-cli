@@ -25,6 +25,8 @@ func runCommand(ctx context.Context, options Options, schema *commandSchema, com
 		return err
 	}
 	switch command {
+	case "stage progress":
+		return runStageProgress(ctx, client, stdout)
 	case "challenge list":
 		return runChallengeList(ctx, client, schema.Challenge.List, stdout)
 	case "challenge get":
@@ -50,6 +52,14 @@ func runCommand(ctx context.Context, options Options, schema *commandSchema, com
 	default:
 		return usagef("unsupported command %q", command)
 	}
+}
+
+func runStageProgress(ctx context.Context, client *agentapi.Client, stdout io.Writer) error {
+	var response contract.StageProgressResponse
+	if err := client.Call(ctx, contract.EndpointAgentGetStageProgress, nil, &response, ""); err != nil {
+		return err
+	}
+	return writeResult(stdout, "stage progress", response)
 }
 
 func runAuthLogin(ctx context.Context, options Options, command authLoginCommand, stdin io.Reader, stdout io.Writer) error {

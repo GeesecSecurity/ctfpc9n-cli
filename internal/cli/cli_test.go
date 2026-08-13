@@ -200,6 +200,7 @@ func TestParticipantCommandsUseOnlyManifestEndpoints(t *testing.T) {
 		download  bool
 	}
 	cases := []testCase{
+		{name: "stage progress", args: []string{"stage", "progress"}, path: "/agent/v1/stage/progress", response: `{"code":0,"msg":"ok","data":{"enabled":true,"supported":true,"graph":{"nodes":[],"edges":[]},"valid":true,"stageProgress":[],"unlockedStages":[]}}`},
 		{name: "challenge list", args: []string{"challenge", "list"}, path: "/agent/v1/challenges/list", body: map[string]any{"tags": nil, "type": float64(0)}, response: `{"code":0,"msg":"ok","data":{"challenges":[],"dark_mode":false}}`},
 		{name: "challenge get", args: []string{"challenge", "get", "--challenge-id", "1"}, path: "/agent/v1/challenges/detail", body: map[string]any{"challengeId": float64(1), "page": map[string]any{"page": float64(1), "size": float64(100)}}, response: `{"code":0,"msg":"ok","data":{"challenge":{},"dark_mode":false,"submit_logs_total":0,"submit_logs_page":{"page":1,"size":100}}}`},
 		{name: "attachment download", args: []string{"attachment", "download", "--challenge-id", "1", "--attachment-path", "/task.zip"}, path: "/agent/v1/attachments/download", body: map[string]any{"challengeId": float64(1), "attachmentPath": "/task.zip"}, download: true},

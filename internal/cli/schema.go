@@ -2,6 +2,7 @@ package cli
 
 type commandSchema struct {
 	Auth       authCommands       `cmd:""`
+	Stage      stageCommands      `cmd:""`
 	Challenge  challengeCommands  `cmd:""`
 	Attachment attachmentCommands `cmd:""`
 	Runtime    runtimeCommands    `cmd:""`
@@ -19,6 +20,12 @@ type authLoginCommand struct {
 }
 
 type authLogoutCommand struct{}
+
+type stageCommands struct {
+	Progress stageProgressCommand `cmd:""`
+}
+
+type stageProgressCommand struct{}
 
 type challengeCommands struct {
 	List challengeListCommand `cmd:""`

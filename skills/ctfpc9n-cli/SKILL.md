@@ -48,18 +48,21 @@ ctfpc9n-cli --session <name> auth logout
 
 ## Required Workflow
 
-1. List participant-visible challenges, then read a selected challenge.
-2. Use a static `attachment_path` only when it appears in `challenge get`
+1. Run `stage progress` before reading challenges. When stage mode is enabled,
+   use its server-provided unlock state and locked reasons; do not infer access
+   from the competition mode or dependency graph locally.
+2. List participant-visible challenges, then read an unlocked challenge.
+3. Use a static `attachment_path` only when it appears in `challenge get`
    output. Supply a new explicit `--output` path for each download.
-3. For dynamic attachments, query `attachment dynamic status`; download only
+4. For dynamic attachments, query `attachment dynamic status`; download only
    after the returned status permits it. Do not assume regeneration is
    idempotent.
-4. For a runtime, call `runtime start`, preserve its request ID, then call
+5. For a runtime, call `runtime start`, preserve its request ID, then call
    `runtime inspect`. Treat runtime state in successful JSON as business state,
    not a CLI error.
-5. For every runtime write and Flag submission, generate one stable request ID
+6. For every runtime write and Flag submission, generate one stable request ID
    and retain it in the current task state. Reuse the exact ID on a retry.
-6. Once the complete Flag is known, submit it immediately through stdin with
+7. Once the complete Flag is known, submit it immediately through stdin with
    `submission flag --flag-stdin`.
 
 Use leaf Help immediately before an operation to obtain its current request,

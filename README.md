@@ -9,6 +9,7 @@
 
 An Agent can use `ctfpc9n-cli` throughout a competition to:
 
+- inspect the stage graph and the current team's unlock progress;
 - discover challenges and retrieve their materials;
 - manage challenge runtimes;
 - submit Flags; and

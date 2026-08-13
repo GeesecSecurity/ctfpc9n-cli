@@ -125,15 +125,15 @@ type ChallengeBaseForUser struct {
 type ChallengeShortInfo struct {
 	ChallengeId             uint64 `json:"challenge_id,optional"`                    //id
 	ChallengeName           string `json:"challenge_name"`                           //题目名
-	ShortDes                string `json:"short_des"`                                //题目简介
+	ShortDes                string `json:"short_des,optional"`                       //题目简介
 	RuntimeMode             string `json:"runtimeMode,optional"`                     // 运行模式 none/docker/pentest
-	Score                   uint64 `json:"score"`                                    //题目当前分数
+	Score                   uint64 `json:"score,optional"`                           //题目当前分数
 	AwdpDefenceCurrentScore uint64 `json:"awdp_defence_current_score,optional"`      //防御当前分数
-	Tags                    []Tag  `json:"tags"`                                     //标签分类：如web，hard
-	DiffcultyStar           uint64 `json:"difficulty"`                               //难度星级
-	IsSolved                bool   `json:"is_solved"`                                //是否解决
-	Type                    uint64 `json:"type"`                                     //题目类型 1-攻击(ctf) 2-awdp防御 3-攻击+防御 4-实景
-	IsCheckPassed           bool   `json:"is_check_passed"`                          //是否通过防御检查
+	Tags                    []Tag  `json:"tags,optional"`                            //标签分类：如web，hard
+	DiffcultyStar           uint64 `json:"difficulty,optional"`                      //难度星级
+	IsSolved                bool   `json:"is_solved,optional"`                       //是否解决
+	Type                    uint64 `json:"type,optional"`                            //题目类型 1-攻击(ctf) 2-awdp防御 3-攻击+防御 4-实景
+	IsCheckPassed           bool   `json:"is_check_passed,optional"`                 //是否通过防御检查
 	CurrentTotalScore       uint64 `json:"current_total_score,optional"`             //实景题当前总分
 	SolvedSubCount          uint64 `json:"solved_sub_count,optional"`                //已解决的子题目数量
 	TotalSubCount           uint64 `json:"total_sub_count,optional"`                 //子题目总数量
@@ -141,6 +141,8 @@ type ChallengeShortInfo struct {
 	MachineStatus           string `json:"machine_status,optional,omitempty"`        //机器运行状态
 	MachineAttackStatus     string `json:"machine_attack_status,optional,omitempty"` //机器被攻击状态
 	TeamCurrentScore        int64  `json:"team_current_score,omitempty"`             //队伍在当前题目上的剩余分数
+	StageLocked             bool   `json:"stage_locked,optional"`                    //闯关模式下是否锁定
+	LockedReason            string `json:"locked_reason,optional"`                   //闯关锁定原因
 }
 
 type DelayChallengeResponse struct {
@@ -198,6 +200,58 @@ type ScenePentestRuntimeState struct {
 	VpnDownloadableCount     uint64 `json:"vpnDownloadableCount,optional"`
 }
 
+type StageEdge struct {
+	Id     string `json:"id,optional"`
+	Source string `json:"source"`
+	Target string `json:"target"`
+}
+
+type StageGraph struct {
+	Nodes []StageNode `json:"nodes"`
+	Edges []StageEdge `json:"edges"`
+}
+
+type StageIssue struct {
+	NodeId  string `json:"nodeId,optional"`
+	Code    string `json:"code"`
+	Message string `json:"message"`
+}
+
+type StageNode struct {
+	Id               string        `json:"id"`
+	Name             string        `json:"name"`
+	ChallengeIds     []uint64      `json:"challengeIds"`
+	CompletionRule   string        `json:"completionRule"`
+	PrerequisiteRule string        `json:"prerequisiteRule,optional"`
+	IsStart          bool          `json:"isStart"`
+	Position         StagePosition `json:"position"`
+}
+
+type StageNodeProgress struct {
+	NodeId         string `json:"nodeId"`
+	Completed      bool   `json:"completed"`
+	Unlocked       bool   `json:"unlocked"`
+	SolvedCount    int64  `json:"solvedCount"`
+	ChallengeCount int64  `json:"challengeCount"`
+	LockedReason   string `json:"lockedReason,optional"`
+}
+
+type StagePosition struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+}
+
+type StageProgressResponse struct {
+	Enabled        bool                `json:"enabled"`
+	Supported      bool                `json:"supported"`
+	Graph          StageGraph          `json:"graph"`
+	Valid          bool                `json:"valid"`
+	Issues         []StageIssue        `json:"issues,optional"`
+	StageProgress  []StageNodeProgress `json:"stageProgress"`
+	UnlockedStages []string            `json:"unlockedStages"`
+	LockedReason   string              `json:"lockedReason,optional"`
+}
+
 type SubProblem struct {
 	SubProblemId   uint64 `json:"sub_problem_id,optional"` //子题目ID
 	ChallengeId    uint64 `json:"challenge_id,optional"`   //所属题目ID
@@ -233,8 +287,10 @@ type GetChallengeDetailInfoResponse struct {
 }
 
 type GetChallengeListResponse struct {
-	Challenges []ChallengeShortInfo `json:"challenges"`
-	DarkMode   bool                 `json:"dark_mode"` //是否黑灯模式
+	Challenges        []ChallengeShortInfo `json:"challenges"`
+	DarkMode          bool                 `json:"dark_mode"`                    //是否黑灯模式
+	StageMode         bool                 `json:"stage_mode"`                   //是否启用闯关模式
+	StageProgressHint string               `json:"stage_progress_hint,optional"` //机器可读提示：read_stage_progress_first
 }
 
 type GetRankInfoResponse struct {
