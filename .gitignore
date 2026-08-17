@@ -1,4 +1,5 @@
 /.build/
 /bin/
 /contracts/runtime/
+/docs/ctfpc9n-cli-plan.md
 /.drone.yml
