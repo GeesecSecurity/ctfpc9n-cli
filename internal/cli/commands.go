@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -11,6 +12,8 @@ import (
 	contract "ctfpc9n-cli/internal/generated/agentapi"
 	"ctfpc9n-cli/internal/session"
 )
+
+const agentTokenEnvironment = "CTFPC9N_TOKEN"
 
 func runCommand(ctx context.Context, options Options, schema *commandSchema, command string, stdin io.Reader, stdout io.Writer) error {
 	stdin = stdinOrDefault(stdin)
@@ -69,10 +72,7 @@ func runAuthLogin(ctx context.Context, options Options, command authLoginCommand
 	if !options.APIBaseSet {
 		return usagef("auth login requires --api-base")
 	}
-	if !command.TokenStdin {
-		return usagef("auth login requires --token-stdin")
-	}
-	token, err := readStdinLine(stdin, "token")
+	token, err := resolveAuthToken(command, stdin)
 	if err != nil {
 		return err
 	}
@@ -92,6 +92,30 @@ func runAuthLogin(ctx context.Context, options Options, command authLoginCommand
 		return fmt.Errorf("save session: %w", err)
 	}
 	return writeResult(stdout, "auth login", authLoginResult{Session: options.Session, APIBase: stored.APIBase, CreatedAt: stored.CreatedAt.Format(time.RFC3339Nano)})
+}
+
+func resolveAuthToken(command authLoginCommand, stdin io.Reader) (string, error) {
+	if command.Token != nil && command.TokenStdin {
+		return "", usagef("--token and --token-stdin cannot be used together")
+	}
+	var token string
+	switch {
+	case command.Token != nil:
+		token = *command.Token
+	case command.TokenStdin:
+		var err error
+		token, err = readStdinLine(stdin, "token")
+		if err != nil {
+			return "", err
+		}
+	default:
+		token = os.Getenv(agentTokenEnvironment)
+	}
+	token = strings.TrimSpace(token)
+	if token == "" {
+		return "", usagef("auth login requires --token, --token-stdin, or %s", agentTokenEnvironment)
+	}
+	return token, nil
 }
 
 func runAuthLogout(options Options, stdout io.Writer) error {

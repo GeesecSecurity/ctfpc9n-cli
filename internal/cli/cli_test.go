@@ -57,6 +57,7 @@ func TestAuthLoginValidatesTokenAndDoesNotPrintIt(t *testing.T) {
 	}))
 	defer server.Close()
 	t.Setenv("CTFPC9N_STATE_DIR", filepath.Join(t.TempDir(), "state"))
+	t.Setenv(agentTokenEnvironment, "environment-token-not-used")
 	var output bytes.Buffer
 	exitCode := Execute([]string{"--session", "contest-a", "auth", "login", "--api-base", server.URL, "--token-stdin"}, strings.NewReader(token+"\n"), &output)
 	if exitCode != 0 {
@@ -68,6 +69,101 @@ func TestAuthLoginValidatesTokenAndDoesNotPrintIt(t *testing.T) {
 	stored, err := session.Load("contest-a")
 	if err != nil || stored.Token != token {
 		t.Fatalf("stored session = %#v, err = %v", stored, err)
+	}
+}
+
+func TestAuthLoginSupportsTokenFlagAndEnvironment(t *testing.T) {
+	cases := []struct {
+		name     string
+		args     []string
+		envToken string
+		want     string
+	}{
+		{name: "token flag overrides environment", args: []string{"--token", "flag-token"}, envToken: "environment-token", want: "flag-token"},
+		{name: "environment fallback", envToken: "environment-token", want: "environment-token"},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				if request.Header.Get("Authorization") != "Bearer "+testCase.want {
+					t.Errorf("authorization = %q", request.Header.Get("Authorization"))
+				}
+				_, _ = io.WriteString(writer, `{"code":0,"msg":"ok","data":{"challenges":[],"dark_mode":false}}`)
+			}))
+			defer server.Close()
+			t.Setenv("CTFPC9N_STATE_DIR", filepath.Join(t.TempDir(), "state"))
+			t.Setenv(agentTokenEnvironment, testCase.envToken)
+			args := []string{"--session", "contest-a", "auth", "login", "--api-base", server.URL}
+			args = append(args, testCase.args...)
+			var output bytes.Buffer
+			if code := Execute(args, strings.NewReader(""), &output); code != 0 {
+				t.Fatalf("exit code = %d, output = %s", code, output.String())
+			}
+			for _, secret := range []string{testCase.want, testCase.envToken} {
+				if secret != "" && strings.Contains(output.String(), secret) {
+					t.Fatalf("token leaked in %s", output.String())
+				}
+			}
+			stored, err := session.Load("contest-a")
+			if err != nil || stored.Token != testCase.want {
+				t.Fatalf("stored session = %#v, err = %v", stored, err)
+			}
+		})
+	}
+}
+
+func TestAuthLoginRejectsInvalidTokenSourcesWithoutLeaking(t *testing.T) {
+	cases := []struct {
+		name     string
+		args     []string
+		stdin    string
+		envToken string
+		secrets  []string
+	}{
+		{name: "missing source"},
+		{name: "empty explicit token does not fall back", args: []string{"--token", ""}, envToken: "environment-token", secrets: []string{"environment-token"}},
+		{name: "conflicting explicit sources", args: []string{"--token", "argument-token", "--token-stdin"}, stdin: "stdin-token\n", envToken: "environment-token", secrets: []string{"argument-token", "stdin-token", "environment-token"}},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			requests := 0
+			server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+				requests++
+				_, _ = io.WriteString(writer, `{"code":0,"msg":"ok","data":{"challenges":[],"dark_mode":false}}`)
+			}))
+			defer server.Close()
+			t.Setenv("CTFPC9N_STATE_DIR", filepath.Join(t.TempDir(), "state"))
+			t.Setenv(agentTokenEnvironment, testCase.envToken)
+			args := []string{"--session", "contest-a", "auth", "login", "--api-base", server.URL}
+			args = append(args, testCase.args...)
+			var output bytes.Buffer
+			if code := Execute(args, strings.NewReader(testCase.stdin), &output); code != 2 {
+				t.Fatalf("exit code = %d, output = %s", code, output.String())
+			}
+			if requests != 0 {
+				t.Fatalf("requests = %d, want 0", requests)
+			}
+			for _, secret := range testCase.secrets {
+				if strings.Contains(output.String(), secret) {
+					t.Fatalf("token leaked in %s", output.String())
+				}
+			}
+			if _, err := session.Load("contest-a"); err == nil {
+				t.Fatal("invalid token source saved a session")
+			}
+		})
+	}
+}
+
+func TestAuthLoginHelpDocumentsAllTokenSources(t *testing.T) {
+	var output bytes.Buffer
+	if code := Execute([]string{"help", "auth", "login"}, strings.NewReader(""), &output); code != 0 {
+		t.Fatalf("exit code = %d, output = %s", code, output.String())
+	}
+	for _, expected := range []string{"--token", "--token-stdin", agentTokenEnvironment, `"sensitive":true`} {
+		if !strings.Contains(output.String(), expected) {
+			t.Errorf("help is missing %q: %s", expected, output.String())
+		}
 	}
 }
 

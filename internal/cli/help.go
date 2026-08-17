@@ -62,7 +62,7 @@ type authLogoutResult struct {
 
 func commandCatalog() []commandSpec {
 	return []commandSpec{
-		{Path: "auth login", Summary: "Validate a stdin token and persist a named local session.", Prerequisites: []string{"A supplied --api-base URL and --token-stdin."}, Endpoint: &contract.EndpointAgentListChallenges, Request: &contract.AgentChallengeListRequest{}, Result: &authLoginResult{}, Stdin: "--token-stdin"},
+		{Path: "auth login", Summary: "Validate an Agent token and persist a named local session.", Prerequisites: []string{"A supplied --api-base URL and one token source: --token, --token-stdin, or CTFPC9N_TOKEN."}, Endpoint: &contract.EndpointAgentListChallenges, Request: &contract.AgentChallengeListRequest{}, Result: &authLoginResult{}, Stdin: "--token-stdin"},
 		{Path: "auth logout", Summary: "Delete a named local session; succeeds when it is already absent.", Prerequisites: []string{"A session name."}, Result: &authLogoutResult{}, Local: true},
 		{Path: "stage progress", Summary: "Read the current team's stage graph and unlock progress.", Prerequisites: []string{"An authenticated session.", "Run before reading challenges when stage mode may be enabled."}, Endpoint: &contract.EndpointAgentGetStageProgress, Result: &contract.StageProgressResponse{}},
 		{Path: "challenge list", Summary: "List participant-visible challenges.", Prerequisites: []string{"An authenticated session.", "Read stage progress first when stage mode is enabled."}, Endpoint: &contract.EndpointAgentListChallenges, Request: &contract.AgentChallengeListRequest{}, Result: &contract.GetChallengeListResponse{}},
@@ -145,7 +145,10 @@ func globalFlags(path string) []helpFlag {
 func commandFlags(spec commandSpec) []helpFlag {
 	switch spec.Path {
 	case "auth login":
-		return []helpFlag{{Name: "--token-stdin", Description: "Read exactly one token line from stdin.", Required: true, Sensitive: true}}
+		return []helpFlag{
+			{Name: "--token", Description: "Agent token value; overrides CTFPC9N_TOKEN and conflicts with --token-stdin.", Sensitive: true},
+			{Name: "--token-stdin", Description: "Read exactly one token line from stdin; overrides CTFPC9N_TOKEN.", Sensitive: true},
+		}
 	case "challenge list":
 		return []helpFlag{{Name: "--tag", Description: "Repeatable challenge tag filter."}, {Name: "--type", Description: "Optional challenge type filter."}}
 	case "challenge get":
@@ -175,7 +178,7 @@ func requestMetadata(spec commandSpec) map[string]any {
 	}
 	headers := []map[string]any{{"name": "Authorization", "source": "stored session token", "sensitive": true}}
 	if spec.Path == "auth login" {
-		headers = []map[string]any{{"name": "Authorization", "source": "--token-stdin", "sensitive": true}}
+		headers = []map[string]any{{"name": "Authorization", "source": "--token, --token-stdin, or CTFPC9N_TOKEN", "sensitive": true}}
 	}
 	if spec.RequestID != "" {
 		headers = append(headers, map[string]any{"name": "X-Request-Id", "source": "--request-id"})
@@ -189,6 +192,9 @@ func requestMetadata(spec commandSpec) map[string]any {
 	}
 	if spec.Stdin != "" {
 		metadata["stdin"] = map[string]any{"flag": spec.Stdin, "sensitive": true, "lines": 1}
+	}
+	if spec.Path == "auth login" {
+		metadata["environment"] = []map[string]any{{"name": agentTokenEnvironment, "sensitive": true, "fallback": true}}
 	}
 	return metadata
 }

@@ -33,14 +33,18 @@ Do not parse JSON with shell text tools or use `data` when `ok` is false.
 ## Session Handling
 
 Use an existing named session for normal operations. To import a new Agent
-token, send one token line through protected stdin:
+token, prefer sending one token line through protected stdin:
 
 ```bash
 ctfpc9n-cli --session <name> auth login --api-base <https-url> --token-stdin
 ```
 
-Never pass a token or Flag as a command-line argument. Do not echo, log, save,
-or put them in filenames. End a temporary session with:
+`auth login` also accepts `--token <value>` or the `CTFPC9N_TOKEN` environment
+variable. An explicit `--token` or `--token-stdin` overrides the environment;
+the two flags cannot be combined. Prefer stdin because command arguments may
+be visible in process listings or shell history and environment variables may
+be inherited by child processes. Do not echo, log, save, or put tokens or
+Flags in filenames. End a temporary session with:
 
 ```bash
 ctfpc9n-cli --session <name> auth logout

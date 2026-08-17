@@ -67,6 +67,8 @@ CLI 的唯一一等使用者是 Agent，而不是交互式终端用户。因此�
 
 ```bash
 ctfpc9n-cli auth login --session contest-a --api-base https://competition.example/api --token-stdin < /run/secrets/agent-token
+CTFPC9N_TOKEN=<agent-token> ctfpc9n-cli auth login --session contest-a --api-base https://competition.example/api
+ctfpc9n-cli auth login --session contest-a --api-base https://competition.example/api --token <agent-token>
 
 ctfpc9n-cli --session contest-a challenge list --tag web --type 1
 ctfpc9n-cli --session contest-a challenge get --challenge-id 1001 --page 1 --size 100
@@ -85,10 +87,13 @@ Agent Token 已能直接访问比赛后端，因此只需要安全导入和持�
 
 `auth login`：
 
-1. 接受 `--session NAME`、`--api-base URL` 和 `--token-stdin`。
-2. 从 stdin 读取一行原始 Agent Token；不支持 `--token`、Token 环境变量、用户名或密码。
-3. 通过最小的 `POST /agent/v1/challenges/list` 请求确认 Token 已通过 Agent 鉴权。
-4. 鉴权通过后，以原子方式保存 session；鉴权失败、网络失败或不可信响应时不写文件。
+1. 接受 `--session NAME`、`--api-base URL`，以及 `--token`、`--token-stdin` 或
+   `CTFPC9N_TOKEN` 三种 Token 来源之一；不支持用户名或密码。
+2. `--token` 与 `--token-stdin` 互斥；显式参数优先于环境变量，两者都未提供时才读取
+   `CTFPC9N_TOKEN`。空值按参数错误处理。
+3. 优先使用 stdin。`--token` 可能进入 shell history 或进程参数，环境变量可能被子进程继承。
+4. 通过最小的 `POST /agent/v1/challenges/list` 请求确认 Token 已通过 Agent 鉴权。
+5. 鉴权通过后，以原子方式保存 session；鉴权失败、网络失败或不可信响应时不写文件。
 
 session 文件位于 `~/.local/state/ctfpc9n-cli/sessions/<name>.json`。`CTFPC9N_STATE_DIR`
 可以为隔离的 Agent 工作空间指定状态目录。目录权限为 `0700`，session 文件以临时文件、
@@ -161,7 +166,8 @@ ctfpc9n-cli runtime start --help
 }
 ```
 
-`auth login` 的 request 元数据声明 `--token-stdin` 为敏感 stdin 输入和其鉴权请求；
+`auth login` 的 request 元数据声明 `--token`、`--token-stdin` 和 `CTFPC9N_TOKEN` 为敏感
+鉴权来源，并将 `--token-stdin` 声明为敏感 stdin 输入；
 `auth logout` 声明本地 session 删除操作，不伪造 HTTP 调用。
 
 ```json
@@ -256,8 +262,9 @@ schema 是唯一的对外 CLI 清单；生成类型不能自动变成可调用�
    和空的 Kong command schema。
 2. 先实现 command catalog、JSON Help 和 result schema；为每个叶子命令写测试，验证
    `help <command>` 与 `<command> --help` 等价，且包含完整 request/response 元数据。
-3. 以 `httptest` 写 `auth login/logout` 的失败测试：Token 仅从 stdin 读取、鉴权失败不落盘、
-   session 目录 `0700`、session 文件 `0600`、logout 后不能加载。
+3. 以 `httptest` 写 `auth login/logout` 测试：验证 `--token`、`--token-stdin` 和
+   `CTFPC9N_TOKEN` 的优先级与冲突处理、鉴权失败不落盘、session 目录 `0700`、session
+   文件 `0600`、logout 后不能加载。
 4. 实现 session、统一 JSON result、错误脱敏和 Agent REST 客户端。
 5. 按“只读、运行环境写操作、Flag 提交、附件流下载”的顺序实现命令；每个命令先补精确
    的 Method、路径、Bearer、请求体和 `X-Request-Id` 测试。
@@ -270,8 +277,9 @@ schema 是唯一的对外 CLI 清单；生成类型不能自动变成可调用�
 - 每条命令 Help 都含有 flags、global flags、request 元数据和 model-backed `resultSchema`；
 - 正常结果、Help、参数错误、鉴权错误和后端错误均为版本化 JSON，且 JSON 模式不写 stderr；
 - 只生成和调用第 3 节列出的 11 个 Agent REST 调用；
-- 所有参赛命令强制 `--session`，不存在 Token 环境变量或 `--token`；
-- `auth login` 仅从 stdin 接收 Token，鉴权成功后原子保存 `0700`/`0600` session；
+- 所有参赛命令强制 `--session`；仅 `auth login` 接受 `--token`、`--token-stdin` 或
+  `CTFPC9N_TOKEN`，显式来源优先于环境变量且两个参数互斥；
+- `auth login` 鉴权成功后原子保存 `0700`/`0600` session；
 - `auth logout` 完整删除 session，Token/Flag 不会出现在输出或本地日志；
 - 所有写操作发送稳定的 body `requestId` 和 `X-Request-Id`，重试不会静默改写该值；
 - 附件只写入显式目标路径，失败不覆盖既有文件；

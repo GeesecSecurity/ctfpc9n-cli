@@ -16,7 +16,8 @@ type authCommands struct {
 }
 
 type authLoginCommand struct {
-	TokenStdin bool `name:"token-stdin" required:"" help:"Read the Agent token from one stdin line."`
+	Token      *string `name:"token" optional:"" help:"Agent token value; prefer --token-stdin when command arguments may be observable."`
+	TokenStdin bool    `name:"token-stdin" help:"Read the Agent token from one stdin line."`
 }
 
 type authLogoutCommand struct{}
