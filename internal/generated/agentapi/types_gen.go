@@ -8,8 +8,7 @@ type AgentAttachmentDownloadRequest struct {
 }
 
 type AgentChallengeDetailRequest struct {
-	ChallengeId uint64      `json:"challengeId"`
-	Page        PageRequest `json:"page,optional"`
+	ChallengeId uint64 `json:"challengeId"`
 }
 
 type AgentChallengeListRequest struct {
@@ -102,7 +101,6 @@ type ChallengeBaseForUser struct {
 	SumSolves                uint64                   `json:"sum_solves,optional"`                 //解题总人数
 	Attachments              []Attachment             `json:"attachments,optional"`                //附件
 	AllowAutoSubmit          bool                     `json:"allow_auto_submit,optional"`          //是否允许自动提交flag，默认不允许
-	SubmitLogs               []SubmitLog              `json:"submit_logs,optional"`                //提交日志 //这里用于某个题目的前三血信息展示
 	Address                  string                   `json:"address"`                             //开启的容器地址
 	RestTime                 uint64                   `json:"rest_time"`                           //容器剩余时间
 	IsSolved                 bool                     `json:"is_solved"`                           //是否解出
@@ -110,7 +108,6 @@ type ChallengeBaseForUser struct {
 	Type                     uint64                   `json:"type"`                                //题目类型 1-攻击(ctf) 2-awdp防御 3-攻击+防御 4-实景
 	AWDPDefenceCurrentScore  uint64                   `json:"awdp_defence_current_score,optional"` //防御当前分数
 	AWDPDefenceSumSolves     uint64                   `json:"awdp_defence_sum_solves,optional"`    //防御解题总人数
-	AWDPSubmitLogs           []SubmitLog              `json:"awdp_submit_logs,optional"`           //提交日志
 	ScoreCalculateType       uint64                   `json:"score_calculate_type,optional"`       //分数计算方式(1-每个小问单独计分 2-所有小问总分计算)
 	CurrentTotalScore        uint64                   `json:"current_total_score,optional"`        //实景题当前总分
 	SubProblems              []SubProblem             `json:"sub_problems,optional"`               //子题目
@@ -161,11 +158,6 @@ type Identity struct {
 	IdentityId     uint64 `json:"identityId,optional"`
 	IdentityValue  string `json:"identityValue"`
 	IdentityBaseId uint64 `json:"identityBaseId"`
-}
-
-type PageRequest struct {
-	Page uint64 `json:"page"`
-	Size uint64 `json:"size"`
 }
 
 type RankList struct {
@@ -263,16 +255,6 @@ type SubProblem struct {
 	SumSolves      uint64 `json:"sum_solves,optional"`     //解题总人数
 }
 
-type SubmitLog struct {
-	TeamId           uint64 `json:"team_id"`                     //队伍ID
-	UserId           uint64 `json:"user_id"`                     //用户ID
-	TeamName         string `json:"team_name"`                   //队伍名
-	UserName         string `json:"user_name"`                   //用户名
-	SolveTime        uint64 `json:"solve_time"`                  //解题时间
-	SubChallengeId   uint64 `json:"sub_challenge_id,optional"`   //子题目ID（实景题使用）
-	SubChallengeName string `json:"sub_challenge_name,optional"` //子题目名称（实景题使用）
-}
-
 type Tag struct {
 	TagId    uint64 `json:"tag_id,optional"`
 	TagName  string `json:"tag_name"`
@@ -280,10 +262,8 @@ type Tag struct {
 }
 
 type GetChallengeDetailInfoResponse struct {
-	Challenge       ChallengeBaseForUser `json:"challenge"`
-	DarkMode        bool                 `json:"dark_mode"` //是否黑灯模式
-	SubmitLogsTotal uint64               `json:"submit_logs_total"`
-	SubmitLogsPage  PageRequest          `json:"submit_logs_page"`
+	Challenge ChallengeBaseForUser `json:"challenge"`
+	DarkMode  bool                 `json:"dark_mode"` //是否黑灯模式
 }
 
 type GetChallengeListResponse struct {

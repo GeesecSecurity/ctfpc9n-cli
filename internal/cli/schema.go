@@ -40,8 +40,6 @@ type challengeListCommand struct {
 
 type challengeGetCommand struct {
 	ChallengeID uint64 `name:"challenge-id" required:"" help:"Positive challenge ID."`
-	Page        uint64 `name:"page" default:"1" help:"Submit-log page number."`
-	Size        uint64 `name:"size" default:"100" help:"Submit-log page size."`
 }
 
 type attachmentCommands struct {

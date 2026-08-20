@@ -148,13 +148,7 @@ func runChallengeGet(ctx context.Context, client *agentapi.Client, command chall
 	if err := isPositive(command.ChallengeID, "--challenge-id"); err != nil {
 		return err
 	}
-	if err := isPage(command.Page, "--page"); err != nil {
-		return err
-	}
-	if err := isPage(command.Size, "--size"); err != nil {
-		return err
-	}
-	request := contract.AgentChallengeDetailRequest{ChallengeId: command.ChallengeID, Page: contract.PageRequest{Page: command.Page, Size: command.Size}}
+	request := contract.AgentChallengeDetailRequest{ChallengeId: command.ChallengeID}
 	var response contract.GetChallengeDetailInfoResponse
 	if err := client.Call(ctx, contract.EndpointAgentGetChallenge, &request, &response, ""); err != nil {
 		return err
