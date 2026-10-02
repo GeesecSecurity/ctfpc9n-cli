@@ -35,11 +35,23 @@ type routeDefinition struct {
 	ResponseType spec.Type
 }
 
+var endpointPrefix = "/agent/v1"
+
 func main() {
+	profile := flag.String("profile", "competition", "explicit contract profile: competition or evaluation")
 	packageName := flag.String("package", "", "generated Go package name")
 	outputDir := flag.String("output", "", "generated output directory")
 	manifestPath := flag.String("manifest", "", "allowed endpoint manifest")
 	flag.Parse()
+	switch *profile {
+	case "competition":
+		endpointPrefix = "/agent/v1"
+	case "evaluation":
+		endpointPrefix = "/evaluation/agent/v1"
+	default:
+		fmt.Fprintln(os.Stderr, "invalid contract profile")
+		os.Exit(2)
+	}
 
 	if *packageName == "" || *outputDir == "" || *manifestPath == "" {
 		fmt.Fprintln(os.Stderr, "--package, --output, and --manifest are required")
@@ -100,7 +112,7 @@ func loadManifest(filename string) (map[string]struct{}, error) {
 	for _, endpoint := range manifest.Endpoints {
 		method := strings.ToUpper(strings.TrimSpace(endpoint.Method))
 		path := strings.TrimSpace(endpoint.Path)
-		if method == "" || !strings.HasPrefix(path, "/agent/v1/") {
+		if method == "" || !strings.HasPrefix(path, endpointPrefix+"/") {
 			return nil, fmt.Errorf("invalid endpoint manifest entry %q %q", endpoint.Method, endpoint.Path)
 		}
 		key := method + " " + path
@@ -131,9 +143,9 @@ func collectRoutes(api *spec.ApiSpec, allowed map[string]struct{}) ([]routeDefin
 		if name == "" {
 			name = exportedIdentifier(method + " " + path)
 		}
-		relativePath := strings.TrimPrefix(path, "/agent/v1")
+		relativePath := strings.TrimPrefix(path, endpointPrefix)
 		if relativePath == path || relativePath == "" {
-			return nil, fmt.Errorf("endpoint %s is not under /agent/v1", key)
+			return nil, fmt.Errorf("endpoint %s is not under selected profile %s", key, endpointPrefix)
 		}
 		routes = append(routes, routeDefinition{
 			Method: method, Path: relativePath, ContractPath: path, MethodName: name, EndpointName: "Endpoint" + name,

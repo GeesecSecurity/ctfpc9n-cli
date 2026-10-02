@@ -36,10 +36,11 @@ sync-contracts:
 	$(MAKE) check-goctl
 	goctl api validate --api $(CONTRACT)
 
-generate: check-goctl $(GENERATOR)
-	rm -rf $(GENERATED)
-	mkdir -p $(GENERATED)
-	goctl api plugin --api $(CONTRACT) --dir . --plugin="$(abspath $(GENERATOR))=--package agentapi --output $(abspath $(GENERATED)) --manifest $(abspath $(MANIFEST))"
+generate: generate-evaluation check-goctl $(GENERATOR)
+	@test -f "$(CONTRACT)" || { echo "Missing competition contract; run make sync-contracts with RUNTIME_API_DIR first" >&2; exit 1; }
+	@set -e; temporary="$$(mktemp -d)"; trap 'rm -rf "$$temporary"' EXIT; \
+	goctl api plugin --api $(CONTRACT) --dir . --plugin="$(abspath $(GENERATOR))=--package agentapi --output $$temporary --manifest $(abspath $(MANIFEST))"; \
+	mkdir -p $(GENERATED); cp "$$temporary"/*.go $(GENERATED)/
 
 $(GENERATOR): tools/generate/go.mod tools/generate/go.sum tools/generate/main.go
 	mkdir -p $(BUILD_DIR)
@@ -56,3 +57,10 @@ verify: generate check
 
 clean:
 	rm -rf $(BUILD_DIR) bin
+
+.PHONY: generate-evaluation sync-evaluation-contracts
+generate-evaluation: check-goctl $(GENERATOR)
+	mkdir -p internal/generated/evaluationapi
+	goctl api plugin --api contracts/evaluation/main.api --dir . --plugin="$(abspath $(GENERATOR))=--profile evaluation --package evaluationapi --output $(abspath internal/generated/evaluationapi) --manifest $(abspath contracts/evaluation-endpoints.json)"
+sync-evaluation-contracts:
+	bash tools/sync-evaluation-contracts.sh

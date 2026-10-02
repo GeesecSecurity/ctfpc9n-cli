@@ -1,0 +1,68 @@
+{
+  "endpoints": [
+    {
+      "method": "GET",
+      "path": "/evaluation/agent/v1/session"
+    },
+    {
+      "method": "GET",
+      "path": "/evaluation/agent/v1/runs"
+    },
+    {
+      "method": "GET",
+      "path": "/evaluation/agent/v1/challenges"
+    },
+    {
+      "method": "GET",
+      "path": "/evaluation/agent/v1/challenge"
+    },
+    {
+      "method": "GET",
+      "path": "/evaluation/agent/v1/attachment"
+    },
+    {
+      "method": "GET",
+      "path": "/evaluation/agent/v1/runtime"
+    },
+    {
+      "method": "GET",
+      "path": "/evaluation/agent/v1/patch/status"
+    },
+    {
+      "method": "GET",
+      "path": "/evaluation/agent/v1/report"
+    },
+    {
+      "method": "POST",
+      "path": "/evaluation/agent/v1/run/start"
+    },
+    {
+      "method": "POST",
+      "path": "/evaluation/agent/v1/run/finish"
+    },
+    {
+      "method": "POST",
+      "path": "/evaluation/agent/v1/submission/flag"
+    },
+    {
+      "method": "POST",
+      "path": "/evaluation/agent/v1/runtime/start"
+    },
+    {
+      "method": "POST",
+      "path": "/evaluation/agent/v1/runtime/stop"
+    },
+    {
+      "method": "POST",
+      "path": "/evaluation/agent/v1/runtime/extend"
+    },
+    {
+      "method": "POST",
+      "path": "/evaluation/agent/v1/patch/upload"
+    },
+    {
+      "method": "POST",
+      "path": "/evaluation/agent/v1/patch/submit"
+    }
+  ]
+}
