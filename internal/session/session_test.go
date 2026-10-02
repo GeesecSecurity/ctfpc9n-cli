@@ -3,6 +3,7 @@ package session
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -56,5 +57,56 @@ func TestRejectsInvalidSessionNameAndRelativeStateDirectory(t *testing.T) {
 	t.Setenv("CTFPC9N_STATE_DIR", "relative-state")
 	if _, err := StateDir(); err == nil {
 		t.Fatal("relative CTFPC9N_STATE_DIR was accepted")
+	}
+}
+
+func TestSaveRejectsCrossKindReplacement(t *testing.T) {
+	for _, originalKind := range []string{"", "competition", "evaluation"} {
+		t.Run("original-"+originalKind, func(t *testing.T) {
+			state := t.TempDir()
+			t.Setenv("CTFPC9N_STATE_DIR", state)
+			original := `{"apiBase":"https://original.example","token":"original-secret","createdAt":"2026-10-02T00:00:00Z"}`
+			if originalKind != "" {
+				original = strings.Replace(original, `{`, `{"kind":"`+originalKind+`",`, 1)
+			}
+			directory, err := sessionsDir()
+			if err != nil {
+				t.Fatal(err)
+			}
+			path := filepath.Join(directory, "shared.json")
+			if err = os.WriteFile(path, []byte(original), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			nextKind := "evaluation"
+			if originalKind == "evaluation" {
+				nextKind = "competition"
+			}
+			_, err = Save("shared", Value{Kind: nextKind, APIBase: "https://new.example", Token: "new-secret"})
+			if err == nil {
+				t.Fatal("cross-kind login overwrote the existing session")
+			}
+			if strings.Contains(err.Error(), "secret") {
+				t.Fatal("error exposed token")
+			}
+			got, err := os.ReadFile(path)
+			if err != nil || string(got) != original {
+				t.Fatalf("existing session changed: %v", err)
+			}
+		})
+	}
+}
+
+func TestSaveAllowsSameKindReauthentication(t *testing.T) {
+	t.Setenv("CTFPC9N_STATE_DIR", t.TempDir())
+	for _, kind := range []string{"competition", "evaluation"} {
+		for _, token := range []string{"before", "after"} {
+			if _, err := Save(kind, Value{Kind: kind, APIBase: "https://example.test", Token: token}); err != nil {
+				t.Fatal(err)
+			}
+		}
+		got, err := Load(kind)
+		if err != nil || got.Token != "after" {
+			t.Fatalf("same-kind reauthentication failed: %v", err)
+		}
 	}
 }

@@ -69,6 +69,15 @@ func Save(name string, value Value) (Value, error) {
 	if err := rejectUnsafeFile(path, true); err != nil {
 		return Value{}, err
 	}
+	// A shared session name must not switch authentication domains during login.
+	previous, err := Load(name)
+	if err == nil {
+		if previous.Kind != value.Kind {
+			return Value{}, fmt.Errorf("session %q belongs to %s; choose a different session name", name, previous.Kind)
+		}
+	} else if !errors.Is(err, os.ErrNotExist) {
+		return Value{}, err
+	}
 	encoded, err := json.Marshal(value)
 	if err != nil {
 		return Value{}, fmt.Errorf("encode session: %w", err)
