@@ -13,6 +13,8 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -38,9 +40,10 @@ func (err *APIError) Error() string {
 }
 
 type Client struct {
-	baseURL    string
-	httpClient *http.Client
-	token      string
+	contractPrefix string
+	baseURL        string
+	httpClient     *http.Client
+	token          string
 }
 
 type DownloadResult struct {
@@ -71,7 +74,33 @@ func NormalizeBase(value string) (string, error) {
 }
 
 func New(baseURL, token string, timeout time.Duration, insecureTLS bool) (*Client, error) {
-	normalized, err := NormalizeBase(baseURL)
+	return newProfile(baseURL, token, timeout, insecureTLS, "/agent/v1")
+}
+func NewEvaluation(baseURL, token string, timeout time.Duration, insecureTLS bool) (*Client, error) {
+	return newProfile(baseURL, token, timeout, insecureTLS, "/evaluation/agent/v1")
+}
+func NormalizeEvaluationBase(value string) (string, error) {
+	p, e := url.ParseRequestURI(strings.TrimSpace(value))
+	if e != nil || p.Scheme != "https" && p.Scheme != "http" || p.Host == "" || p.User != nil || p.RawQuery != "" || p.Fragment != "" {
+		return "", errors.New("invalid evaluation API base URL")
+	}
+	if strings.HasSuffix(strings.TrimRight(p.Path, "/"), "/agent/v1") && !strings.HasSuffix(strings.TrimRight(p.Path, "/"), "/evaluation/agent/v1") {
+		return "", errors.New("competition API base is not an evaluation base")
+	}
+	p.Path = strings.TrimRight(p.Path, "/")
+	if !strings.HasSuffix(p.Path, "/evaluation/agent/v1") {
+		p.Path += "/evaluation/agent/v1"
+	}
+	return p.String(), nil
+}
+func newProfile(baseURL, token string, timeout time.Duration, insecureTLS bool, prefix string) (*Client, error) {
+	var normalized string
+	var err error
+	if prefix == "/agent/v1" {
+		normalized, err = NormalizeBase(baseURL)
+	} else {
+		normalized, err = NormalizeEvaluationBase(baseURL)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -82,8 +111,9 @@ func New(baseURL, token string, timeout time.Duration, insecureTLS bool) (*Clien
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: insecureTLS} //nolint:gosec // Explicit CLI development flag.
 	return &Client{
-		baseURL: normalized,
-		token:   token,
+		baseURL:        normalized,
+		contractPrefix: prefix,
+		token:          token,
 		httpClient: &http.Client{
 			Timeout:   timeout,
 			Transport: transport,
@@ -96,7 +126,7 @@ func (client *Client) Call(ctx context.Context, endpoint generated.Endpoint, req
 	if err != nil {
 		return fmt.Errorf("encode request: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, endpoint.Method, client.baseURL+endpoint.Path, bytes.NewReader(body))
+	req, err := client.newRequest(ctx, endpoint, request, body)
 	if err != nil {
 		return fmt.Errorf("build request: %w", err)
 	}
@@ -146,7 +176,7 @@ func (client *Client) Download(ctx context.Context, endpoint generated.Endpoint,
 	if err != nil {
 		return DownloadResult{}, fmt.Errorf("encode request: %w", err)
 	}
-	req, err := http.NewRequestWithContext(ctx, endpoint.Method, client.baseURL+endpoint.Path, bytes.NewReader(body))
+	req, err := client.newRequest(ctx, endpoint, request, body)
 	if err != nil {
 		return DownloadResult{}, fmt.Errorf("build request: %w", err)
 	}
@@ -301,4 +331,50 @@ func redactMarkedValue(message, marker string) string {
 		searchFrom = valueStart + len("[redacted]")
 	}
 	return message
+}
+
+func (client *Client) newRequest(ctx context.Context, endpoint generated.Endpoint, value any, body []byte) (*http.Request, error) {
+	prefix := client.contractPrefix
+	if prefix == "" {
+		prefix = "/agent/v1"
+	}
+	if !strings.HasPrefix(endpoint.ContractPath, prefix+"/") {
+		return nil, errors.New("endpoint/session contract mismatch")
+	}
+	address := client.baseURL + endpoint.Path
+	var reader io.Reader = bytes.NewReader(body)
+	if endpoint.Method == http.MethodGet {
+		reader = nil
+		q := url.Values{}
+		if value != nil {
+			v := reflect.ValueOf(value)
+			if v.Kind() == reflect.Pointer {
+				v = v.Elem()
+			}
+			if v.Kind() == reflect.Struct {
+				typ := v.Type()
+				for i := 0; i < v.NumField(); i++ {
+					f := v.Field(i)
+					if f.IsZero() {
+						continue
+					}
+					name := strings.Split(typ.Field(i).Tag.Get("form"), ",")[0]
+					if name == "" {
+						name = typ.Field(i).Name
+						name = strings.ToLower(name[:1]) + name[1:]
+					}
+					switch f.Kind() {
+					case reflect.String:
+						q.Set(name, f.String())
+					case reflect.Int, reflect.Int64:
+						q.Set(name, strconv.FormatInt(f.Int(), 10))
+					}
+				}
+			}
+		}
+		if len(q) > 0 {
+			address += "?" + q.Encode()
+		}
+	}
+	return http.NewRequestWithContext(ctx, endpoint.Method, address, reader)
 }

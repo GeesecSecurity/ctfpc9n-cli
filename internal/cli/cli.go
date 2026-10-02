@@ -207,6 +207,9 @@ func newClient(options Options) (*agentapi.Client, error) {
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", errAuth, err)
 	}
+	if stored.Kind != "competition" {
+		return nil, usagef("evaluation session cannot be used for competition commands")
+	}
 	client, err := agentapi.New(stored.APIBase, stored.Token, options.Timeout, options.InsecureTLS)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", errAuth, err)

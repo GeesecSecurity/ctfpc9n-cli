@@ -14,6 +14,7 @@ import (
 var namePattern = regexp.MustCompile(`^[A-Za-z0-9-]{1,64}$`)
 
 type Value struct {
+	Kind      string    `json:"kind,omitempty"`
 	APIBase   string    `json:"apiBase"`
 	Token     string    `json:"token"`
 	CreatedAt time.Time `json:"createdAt"`
@@ -43,6 +44,12 @@ func StateDir() (string, error) {
 func Save(name string, value Value) (Value, error) {
 	if err := ValidateName(name); err != nil {
 		return Value{}, err
+	}
+	if value.Kind == "" {
+		value.Kind = "competition"
+	}
+	if value.Kind != "competition" && value.Kind != "evaluation" {
+		return Value{}, errors.New("invalid session kind")
 	}
 	value.APIBase = strings.TrimRight(strings.TrimSpace(value.APIBase), "/")
 	value.Token = strings.TrimSpace(value.Token)
@@ -114,6 +121,12 @@ func Load(name string) (Value, error) {
 	var value Value
 	if err := json.Unmarshal(encoded, &value); err != nil {
 		return Value{}, fmt.Errorf("decode session: %w", err)
+	}
+	if value.Kind == "" {
+		value.Kind = "competition"
+	}
+	if value.Kind != "competition" && value.Kind != "evaluation" {
+		return Value{}, errors.New("invalid session kind")
 	}
 	value.APIBase = strings.TrimRight(strings.TrimSpace(value.APIBase), "/")
 	value.Token = strings.TrimSpace(value.Token)

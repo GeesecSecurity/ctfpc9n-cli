@@ -17,6 +17,9 @@ const agentTokenEnvironment = "CTFPC9N_TOKEN"
 
 func runCommand(ctx context.Context, options Options, schema *commandSchema, command string, stdin io.Reader, stdout io.Writer) error {
 	stdin = stdinOrDefault(stdin)
+	if strings.HasPrefix(command, "evaluation ") {
+		return runEvaluation(ctx, options, schema.Evaluation, command, stdin, stdout)
+	}
 	switch command {
 	case "auth login":
 		return runAuthLogin(ctx, options, schema.Auth.Login, stdin, stdout)

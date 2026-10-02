@@ -61,7 +61,7 @@ type authLogoutResult struct {
 }
 
 func commandCatalog() []commandSpec {
-	return []commandSpec{
+	return append([]commandSpec{
 		{Path: "auth login", Summary: "Validate an Agent token and persist a named local session.", Prerequisites: []string{"A supplied --api-base URL and one token source: --token, --token-stdin, or CTFPC9N_TOKEN."}, Endpoint: &contract.EndpointAgentListChallenges, Request: &contract.AgentChallengeListRequest{}, Result: &authLoginResult{}, Stdin: "--token-stdin"},
 		{Path: "auth logout", Summary: "Delete a named local session; succeeds when it is already absent.", Prerequisites: []string{"A session name."}, Result: &authLogoutResult{}, Local: true},
 		{Path: "stage progress", Summary: "Read the current team's stage graph and unlock progress.", Prerequisites: []string{"An authenticated session.", "Run before reading challenges when stage mode may be enabled."}, Endpoint: &contract.EndpointAgentGetStageProgress, Result: &contract.StageProgressResponse{}},
@@ -76,7 +76,7 @@ func commandCatalog() []commandSpec {
 		{Path: "runtime extend", Summary: "Extend a challenge runtime.", Prerequisites: []string{"An authenticated session.", "A stable --request-id."}, Endpoint: &contract.EndpointAgentExtendRuntime, Request: &contract.AgentRuntimeRequest{}, Result: &contract.DelayChallengeResponse{}, RequestID: "Stable idempotency request ID."},
 		{Path: "submission flag", Summary: "Submit one candidate Flag read from stdin.", Prerequisites: []string{"An authenticated session.", "A stable --request-id and --flag-stdin."}, Endpoint: &contract.EndpointAgentSubmitFlag, Request: &contract.AgentFlagSubmitRequest{}, Result: &contract.BoolResp{}, RequestID: "Stable idempotency request ID.", Stdin: "--flag-stdin"},
 		{Path: "rank list", Summary: "List the competition rank.", Prerequisites: []string{"An authenticated session."}, Endpoint: &contract.EndpointAgentGetRank, Request: &contract.AgentRankRequest{}, Result: &contract.GetRankInfoResponse{}},
-	}
+	}, evaluationCommandCatalog()...)
 }
 
 func writeHelp(stdout io.Writer, topic []string) error {
@@ -136,13 +136,16 @@ func globalFlags(path string) []helpFlag {
 		{Name: "--timeout", Description: "HTTP timeout. Defaults to 15s; wait commands use server wait plus 5s unless explicitly set."},
 		{Name: "--insecure-skip-tls-verify, -K", Description: "Disable TLS certificate verification for this command."},
 	}
-	if path == "auth login" {
+	if path == "auth login" || path == "evaluation auth login" {
 		flags = append([]helpFlag{{Name: "--api-base", Description: "HTTP(S) API origin or /agent/v1 base. Required for login.", Required: true}}, flags...)
 	}
 	return flags
 }
 
 func commandFlags(spec commandSpec) []helpFlag {
+	if strings.HasPrefix(spec.Path, "evaluation ") {
+		return evaluationHelpFlags(spec.Path)
+	}
 	switch spec.Path {
 	case "auth login":
 		return []helpFlag{
@@ -177,6 +180,9 @@ func requestMetadata(spec commandSpec) map[string]any {
 		return map[string]any{"transport": "local", "operation": "delete named session"}
 	}
 	headers := []map[string]any{{"name": "Authorization", "source": "stored session token", "sensitive": true}}
+	if spec.Path == "evaluation auth login" {
+		headers = []map[string]any{{"name": "Authorization", "source": "--token-stdin", "sensitive": true}}
+	}
 	if spec.Path == "auth login" {
 		headers = []map[string]any{{"name": "Authorization", "source": "--token, --token-stdin, or CTFPC9N_TOKEN", "sensitive": true}}
 	}

@@ -1,6 +1,7 @@
 package cli
 
 type commandSchema struct {
+	Evaluation evaluationCommands `cmd:""`
 	Auth       authCommands       `cmd:""`
 	Stage      stageCommands      `cmd:""`
 	Challenge  challengeCommands  `cmd:""`
