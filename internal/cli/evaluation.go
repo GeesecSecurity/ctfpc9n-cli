@@ -43,7 +43,9 @@ type evaluationLogin struct {
 	TokenStdin bool `name:"token-stdin" required:"" help:"Read AI token from protected stdin only."`
 }
 type evaluationRunQuery struct {
-	RunID string `name:"run-id" required:""`
+	RunID    string `name:"run-id" required:""`
+	Page     int    `name:"page" default:"1" help:"Page number, starting at 1."`
+	PageSize int    `name:"page-size" default:"50" help:"Questions per page (1..100); read total to fetch subsequent pages."`
 }
 type evaluationRunWrite struct {
 	RunID     string `name:"run-id" required:""`
@@ -203,12 +205,16 @@ func runEvaluation(ctx context.Context, options Options, schema evaluationComman
 	case "evaluation challenge list":
 		endpoint = evaluation.EndpointAiAgentChallenges
 		q.RunId = schema.Challenge.List.RunID
+		q.Page = schema.Challenge.List.Page
+		q.PageSize = schema.Challenge.List.PageSize
 	case "evaluation challenge get":
 		endpoint = evaluation.EndpointAiAgentChallenge
 		setQuery(schema.Challenge.Get)
 	case "evaluation report":
 		endpoint = evaluation.EndpointAiAgentReport
 		q.RunId = schema.Report.RunID
+		q.Page = schema.Report.Page
+		q.PageSize = schema.Report.PageSize
 	case "evaluation runtime inspect":
 		endpoint = evaluation.EndpointAiAgentRuntime
 		setQuery(schema.Runtime.Inspect)
@@ -282,6 +288,9 @@ func runEvaluation(ctx context.Context, options Options, schema evaluationComman
 		}
 		return writeResult(stdout, command, result)
 	}
+	if (command == "evaluation challenge list" || command == "evaluation report") && (q.Page < 1 || q.PageSize < 1 || q.PageSize > 100) {
+		return usagef("--page must be positive and --page-size must be 1..100")
+	}
 	var result json.RawMessage
 	if e = client.Call(ctx, evalEndpoint(endpoint), request, &result, requestID, secret); e != nil {
 		return e
@@ -329,6 +338,9 @@ func evaluationHelpFlags(path string) []helpFlag {
 		return []helpFlag{}
 	}
 	out := []helpFlag{{Name: "--run-id", Description: "Opaque evaluation run ID", Required: true}}
+	if path == "evaluation challenge list" || path == "evaluation report" {
+		out = append(out, helpFlag{Name: "--page", Description: "Page number (default 1)"}, helpFlag{Name: "--page-size", Description: "Questions per page (1..100, default 50); inspect total for more pages"})
+	}
 	if strings.Contains(path, "runtime") || strings.Contains(path, "patch") || strings.Contains(path, "challenge get") || strings.Contains(path, "attachment") || strings.Contains(path, "submission") {
 		out = append(out, helpFlag{Name: "--challenge-id", Description: "Opaque challenge ID", Required: true})
 	}

@@ -80,3 +80,25 @@ func TestEvaluationFlagStdinUsesScopedEndpointAndNeverEchoesFlag(t *testing.T) {
 		t.Fatal("secret echoed")
 	}
 }
+
+func TestEvaluationChallengePagination(t *testing.T) {
+	t.Setenv("CTFPC9N_STATE_DIR", t.TempDir())
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("page") != "2" || r.URL.Query().Get("pageSize") != "25" {
+			t.Errorf("missing pagination: %s", r.URL.RawQuery)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"code":200,"data":{"items":[],"total":1000,"page":2,"pageSize":25}}`))
+	}))
+	defer server.Close()
+	if _, err := session.Save("eval-page", session.Value{Kind: "evaluation", APIBase: server.URL + "/evaluation/agent/v1", Token: "private"}); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if Execute([]string{"--session", "eval-page", "evaluation", "challenge", "list", "--run-id", "run-page", "--page", "2", "--page-size", "25"}, nil, &out) != 0 {
+		t.Fatal(out.String())
+	}
+	if !strings.Contains(out.String(), `"total":1000`) && !strings.Contains(out.String(), `"total": 1000`) {
+		t.Fatal(out.String())
+	}
+}

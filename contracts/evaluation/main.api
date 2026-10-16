@@ -32,18 +32,26 @@ type AITokens {
 }
 
 type AIDeclaredScore {
- Score float64 `json:"score"`
- MaxScore float64 `json:"maxScore"`
- ElapsedSeconds int64 `json:"elapsedSeconds"`
+ Score *float64 `json:"score"`
+ MaxScore *float64 `json:"maxScore"`
+ ElapsedSeconds *int64 `json:"elapsedSeconds"`
 }
 
+type AIQuestionScore {
+ Score *float64 `json:"score"`
+ MaxScore *float64 `json:"maxScore"`
+}
 type AIQuestionDetail {
+ Attack *AIQuestionScore `json:"attack,optional,omitempty"`
+ Repair *AIQuestionScore `json:"repair,optional,omitempty"`
  ChallengeId string `json:"challengeId"`
  Notes string `json:"notes,optional"`
  Tokens *AITokens `json:"tokens,optional,omitempty"`
 }
 
 type AIMetadata {
+ AttackElapsedSeconds *int64 `json:"attackElapsedSeconds,optional,omitempty"`
+ RepairElapsedSeconds *int64 `json:"repairElapsedSeconds,optional,omitempty"`
  Models []AIModel `json:"models,optional,omitempty"`
  AgentName string `json:"agentName,optional,omitempty"`
  AgentVersion string `json:"agentVersion,optional,omitempty"`
@@ -64,6 +72,10 @@ type AILimits {
 }
 
 type AIBenchmark {
+ Source string `json:"source,optional,omitempty"`
+ DefaultKey string `json:"defaultKey,optional,omitempty"`
+ VersionStatus string `json:"versionStatus,optional,omitempty"`
+ DirectionCounts map[string]int `json:"directionCounts,optional,omitempty"`
  Id string `json:"id"`
  BankId string `json:"bankId"`
  Name string `json:"name"`
@@ -107,6 +119,7 @@ type AIAttachment {
 }
 
 type AIChallenge {
+ Tags []string `json:"tags,optional,omitempty"`
  Id string `json:"id"`
  Name string `json:"name"`
  Category string `json:"category"`
@@ -123,10 +136,15 @@ type AIChallenge {
 }
 
 type AIChallengeList {
+ Total int `json:"total"`
+ Page int `json:"page"`
+ PageSize int `json:"pageSize"`
  Items []AIChallenge `json:"items"`
 }
 
 type AIPublication {
+ Hidden bool `json:"hidden,optional,omitempty"`
+ DirectionOnly bool `json:"directionOnly,optional,omitempty"`
  Id string `json:"id"`
  RunId string `json:"runId"`
  AccountId string `json:"accountId"`
@@ -141,6 +159,11 @@ type AIPublication {
 }
 
 type AIRankRow {
+ Direction string `json:"direction,optional,omitempty"`
+ QuestionCount int `json:"questionCount"`
+ SolvedCount int `json:"solvedCount"`
+ ScoreSource string `json:"scoreSource,optional,omitempty"`
+ ElapsedSource string `json:"elapsedSource,optional,omitempty"`
  Id string `json:"id"`
  RunId string `json:"runId"`
  AccountId string `json:"accountId"`
@@ -156,6 +179,8 @@ type AIRankRow {
 }
 
 type AILeaderboard {
+ Applicable *bool `json:"applicable,optional,omitempty"`
+ QuestionCount int `json:"questionCount"`
  Items []AIRankRow `json:"items"`
  Total int `json:"total"`
  Rule string `json:"rule"`
@@ -163,6 +188,10 @@ type AILeaderboard {
 }
 
 type AIReport {
+ ChallengeTotal int `json:"challengeTotal"`
+ Page int `json:"page"`
+ PageSize int `json:"pageSize"`
+ ContentRestricted bool `json:"contentRestricted"`
  Benchmark AIBenchmark `json:"benchmark"`
  Run AIRun `json:"run"`
  Challenges []AIChallenge `json:"challenges"`
@@ -219,6 +248,10 @@ type AIIdentityWrite {
 }
 
 type AIWrite {
+ CandidateId string `json:"candidateId,optional"`
+ QuestionDetails []AIQuestionDetail `json:"questionDetails,optional"`
+ Page int `json:"page,optional"`
+ PageSize int `json:"pageSize,optional"`
  RequestId string `json:"requestId"`
  AccountId string `json:"accountId,optional"`
  BenchmarkId string `json:"benchmarkId,optional"`
@@ -241,6 +274,8 @@ type AIImport {
 }
 
 type AIQuery {
+ Direction string `form:"direction,optional"`
+ CandidateId string `form:"candidateId,optional"`
  RunId string `form:"runId,optional"`
  ChallengeId string `form:"challengeId,optional"`
  AttachmentId string `form:"attachmentId,optional"`
@@ -250,6 +285,34 @@ type AIQuery {
  Track string `form:"track,optional"`
  Page int `form:"page,optional"`
  PageSize int `form:"pageSize,optional"`
+}
+
+type AIDefaultEntry {
+ Key string `json:"key"`
+ Name string `json:"name"`
+ Direction string `json:"direction"`
+ BenchmarkId string `json:"benchmarkId"`
+ Version string `json:"version"`
+ QuestionCount int `json:"questionCount"`
+ Status string `json:"status"`
+}
+type AIDefaultCatalog { Items []AIDefaultEntry `json:"items"` }
+type AICandidateTask {
+ Id string `json:"id"`
+ Status string `json:"status"`
+ CreatedAt int64 `json:"createdAt"`
+ ErrorCode string `json:"errorCode"`
+}
+type AICandidateDiff {
+ ProblemId string `json:"problemId"`
+ Name string `json:"name"`
+ Direction string `json:"direction"`
+ Change string `json:"change"`
+ Reason string `json:"reason"`
+}
+type AICandidatePreview {
+ Items []AICandidateDiff `json:"items"`
+ Total int64 `json:"total"`
 }
 
 @server(
@@ -283,6 +346,10 @@ service api {
  middleware: CheckRole,AIEvaluationFeature
 )
 service api {
+ @handler aiHumanChallenges
+ get /challenges (AIQuery) returns (AIChallengeList)
+ @handler aiQuestionScores
+ post /question-scores (AIWrite) returns (AIReport)
  @handler aiListBenchmarks
  get /benchmarks returns (AIBenchmarkList)
 
@@ -320,6 +387,14 @@ service api {
  middleware: CheckRole,AdminOnly,AIEvaluationFeature
 )
 service api {
+ @handler aiDefaultsRefresh
+ post /defaults/refresh (AIWrite) returns (AICandidateTask)
+ @handler aiDefaultsStatus
+ get /defaults/status (AIQuery) returns (AICandidateTask)
+ @handler aiDefaultsPreview
+ get /defaults/preview (AIQuery) returns (AICandidatePreview)
+ @handler aiDefaultsPublish
+ post /defaults/publish (AIWrite) returns (AIDefaultCatalog)
  @handler aiImportBenchmark
  post /import (AIImport) returns (AIBenchmark)
 
@@ -334,6 +409,8 @@ service api {
  middleware: AIEvaluationFeature
 )
 service api {
+ @handler aiPublicDefaults
+ get /defaults returns (AIDefaultCatalog)
  @handler aiPublicBenchmarks
  get /benchmarks returns (AIBenchmarkList)
 

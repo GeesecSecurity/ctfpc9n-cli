@@ -17,18 +17,23 @@ type AIAttachment struct {
 }
 
 type AIBenchmark struct {
-	Id                  string   `json:"id"`
-	BankId              string   `json:"bankId"`
-	Name                string   `json:"name"`
-	Version             string   `json:"version"`
-	QuestionCount       int      `json:"questionCount"`
-	RepairQuestionCount int      `json:"repairQuestionCount"`
-	RuleVersion         string   `json:"ruleVersion"`
-	Limits              AILimits `json:"limits"`
-	Fixture             bool     `json:"fixture"`
+	Source              string         `json:"source,optional,omitempty"`
+	DefaultKey          string         `json:"defaultKey,optional,omitempty"`
+	VersionStatus       string         `json:"versionStatus,optional,omitempty"`
+	DirectionCounts     map[string]int `json:"directionCounts,optional,omitempty"`
+	Id                  string         `json:"id"`
+	BankId              string         `json:"bankId"`
+	Name                string         `json:"name"`
+	Version             string         `json:"version"`
+	QuestionCount       int            `json:"questionCount"`
+	RepairQuestionCount int            `json:"repairQuestionCount"`
+	RuleVersion         string         `json:"ruleVersion"`
+	Limits              AILimits       `json:"limits"`
+	Fixture             bool           `json:"fixture"`
 }
 
 type AIChallenge struct {
+	Tags                 []string       `json:"tags,optional,omitempty"`
 	Id                   string         `json:"id"`
 	Name                 string         `json:"name"`
 	Category             string         `json:"category"`
@@ -45,13 +50,16 @@ type AIChallenge struct {
 }
 
 type AIChallengeList struct {
-	Items []AIChallenge `json:"items"`
+	Total    int           `json:"total"`
+	Page     int           `json:"page"`
+	PageSize int           `json:"pageSize"`
+	Items    []AIChallenge `json:"items"`
 }
 
 type AIDeclaredScore struct {
-	Score          float64 `json:"score"`
-	MaxScore       float64 `json:"maxScore"`
-	ElapsedSeconds int64   `json:"elapsedSeconds"`
+	Score          *float64 `json:"score"`
+	MaxScore       *float64 `json:"maxScore"`
+	ElapsedSeconds *int64   `json:"elapsedSeconds"`
 }
 
 type AIFlagResult struct {
@@ -80,16 +88,18 @@ type AIMaterial struct {
 }
 
 type AIMetadata struct {
-	Models          []AIModel          `json:"models,optional,omitempty"`
-	AgentName       string             `json:"agentName,optional,omitempty"`
-	AgentVersion    string             `json:"agentVersion,optional,omitempty"`
-	ToolConfig      string             `json:"toolConfig,optional,omitempty"`
-	HumanAssisted   *bool              `json:"humanAssisted,optional,omitempty"`
-	Notes           string             `json:"notes,optional,omitempty"`
-	Tokens          *AITokens          `json:"tokens,optional,omitempty"`
-	Attack          *AIDeclaredScore   `json:"attack,optional,omitempty"`
-	Repair          *AIDeclaredScore   `json:"repair,optional,omitempty"`
-	QuestionDetails []AIQuestionDetail `json:"questionDetails,optional,omitempty"`
+	AttackElapsedSeconds *int64             `json:"attackElapsedSeconds,optional,omitempty"`
+	RepairElapsedSeconds *int64             `json:"repairElapsedSeconds,optional,omitempty"`
+	Models               []AIModel          `json:"models,optional,omitempty"`
+	AgentName            string             `json:"agentName,optional,omitempty"`
+	AgentVersion         string             `json:"agentVersion,optional,omitempty"`
+	ToolConfig           string             `json:"toolConfig,optional,omitempty"`
+	HumanAssisted        *bool              `json:"humanAssisted,optional,omitempty"`
+	Notes                string             `json:"notes,optional,omitempty"`
+	Tokens               *AITokens          `json:"tokens,optional,omitempty"`
+	Attack               *AIDeclaredScore   `json:"attack,optional,omitempty"`
+	Repair               *AIDeclaredScore   `json:"repair,optional,omitempty"`
+	QuestionDetails      []AIQuestionDetail `json:"questionDetails,optional,omitempty"`
 }
 
 type AIModel struct {
@@ -103,6 +113,8 @@ type AIPatchResult struct {
 }
 
 type AIPublication struct {
+	Hidden         bool       `json:"hidden,optional,omitempty"`
+	DirectionOnly  bool       `json:"directionOnly,optional,omitempty"`
 	Id             string     `json:"id"`
 	RunId          string     `json:"runId"`
 	AccountId      string     `json:"accountId"`
@@ -117,6 +129,8 @@ type AIPublication struct {
 }
 
 type AIQuery struct {
+	Direction     string `form:"direction,optional"`
+	CandidateId   string `form:"candidateId,optional"`
 	RunId         string `form:"runId,optional"`
 	ChallengeId   string `form:"challengeId,optional"`
 	AttachmentId  string `form:"attachmentId,optional"`
@@ -129,17 +143,28 @@ type AIQuery struct {
 }
 
 type AIQuestionDetail struct {
-	ChallengeId string    `json:"challengeId"`
-	Notes       string    `json:"notes,optional"`
-	Tokens      *AITokens `json:"tokens,optional,omitempty"`
+	Attack      *AIQuestionScore `json:"attack,optional,omitempty"`
+	Repair      *AIQuestionScore `json:"repair,optional,omitempty"`
+	ChallengeId string           `json:"challengeId"`
+	Notes       string           `json:"notes,optional"`
+	Tokens      *AITokens        `json:"tokens,optional,omitempty"`
+}
+
+type AIQuestionScore struct {
+	Score    *float64 `json:"score"`
+	MaxScore *float64 `json:"maxScore"`
 }
 
 type AIReport struct {
-	Benchmark    AIBenchmark     `json:"benchmark"`
-	Run          AIRun           `json:"run"`
-	Challenges   []AIChallenge   `json:"challenges"`
-	Publications []AIPublication `json:"publications"`
-	TrustNotice  string          `json:"trustNotice"`
+	ChallengeTotal    int             `json:"challengeTotal"`
+	Page              int             `json:"page"`
+	PageSize          int             `json:"pageSize"`
+	ContentRestricted bool            `json:"contentRestricted"`
+	Benchmark         AIBenchmark     `json:"benchmark"`
+	Run               AIRun           `json:"run"`
+	Challenges        []AIChallenge   `json:"challenges"`
+	Publications      []AIPublication `json:"publications"`
+	TrustNotice       string          `json:"trustNotice"`
 }
 
 type AIRun struct {
@@ -184,18 +209,22 @@ type AITokens struct {
 }
 
 type AIWrite struct {
-	RequestId     string      `json:"requestId"`
-	AccountId     string      `json:"accountId,optional"`
-	BenchmarkId   string      `json:"benchmarkId,optional"`
-	RunId         string      `json:"runId,optional"`
-	ChallengeId   string      `json:"challengeId,optional"`
-	PublicationId string      `json:"publicationId,optional"`
-	PatchId       string      `json:"patchId,optional"`
-	Flag          string      `json:"flag,optional"`
-	Board         string      `json:"board,optional"`
-	Track         string      `json:"track,optional"`
-	Reason        string      `json:"reason,optional"`
-	FileName      string      `json:"fileName,optional"`
-	ContentBase64 string      `json:"contentBase64,optional"`
-	Metadata      *AIMetadata `json:"metadata,optional"`
+	CandidateId     string             `json:"candidateId,optional"`
+	QuestionDetails []AIQuestionDetail `json:"questionDetails,optional"`
+	Page            int                `json:"page,optional"`
+	PageSize        int                `json:"pageSize,optional"`
+	RequestId       string             `json:"requestId"`
+	AccountId       string             `json:"accountId,optional"`
+	BenchmarkId     string             `json:"benchmarkId,optional"`
+	RunId           string             `json:"runId,optional"`
+	ChallengeId     string             `json:"challengeId,optional"`
+	PublicationId   string             `json:"publicationId,optional"`
+	PatchId         string             `json:"patchId,optional"`
+	Flag            string             `json:"flag,optional"`
+	Board           string             `json:"board,optional"`
+	Track           string             `json:"track,optional"`
+	Reason          string             `json:"reason,optional"`
+	FileName        string             `json:"fileName,optional"`
+	ContentBase64   string             `json:"contentBase64,optional"`
+	Metadata        *AIMetadata        `json:"metadata,optional"`
 }
