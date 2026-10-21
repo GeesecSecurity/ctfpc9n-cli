@@ -1,11 +1,11 @@
 ---
 name: ctfpc9n-cli
-description: Use ctfpc9n-cli to participate in a CTF competition through the restricted participant Agent API.
+description: Use ctfpc9n-cli for restricted competition participation or authorized AI evaluations with separate sessions.
 ---
 
 # ctfpc9n-cli
 
-Use `ctfpc9n-cli` for competition actions. Do not construct HTTP requests,
+Use `ctfpc9n-cli` for authorized competition and AI evaluation actions. Do not construct HTTP requests,
 operate a competition webpage, or supply team, user, or credential identity
 fields. The selected local session is the only source of identity.
 
@@ -29,6 +29,35 @@ ctfpc9n-cli --session <name> challenge list | jq -e \
 ```
 
 Do not parse JSON with shell text tools or use `data` when `ok` is false.
+
+## Choose the correct session profile
+
+Main-platform AI evaluations require v1.3.0 or newer. Run
+`ctfpc9n-cli help evaluation` first. If missing, replace the old executable
+with the matching verified release asset; do not fall back to competition
+commands. Use the platform-provided API base, run ID and AI subidentity.
+
+For AI evaluation operations use the `evaluation` group exclusively:
+
+```bash
+ctfpc9n-cli --session ai-agent --api-base <platform-api-base> evaluation auth login --token-stdin
+ctfpc9n-cli --session ai-agent evaluation runs
+ctfpc9n-cli --session ai-agent evaluation challenge list --run-id <run-id> --page 1 --page-size 50
+ctfpc9n-cli --session ai-agent evaluation report --run-id <run-id> --page 1 --page-size 50
+ctfpc9n-cli --session ai-agent evaluation auth logout
+```
+
+Only start a created run. Resume an already-running run without restarting it;
+finished runs are read-only. Query leaf help before runtime, attachment, Flag,
+patch and finish operations. Read all pages according to total. Always submit
+Flags and tokens through stdin; patches are uploaded from local files. Preserve
+request IDs on retries and never change the supplied run ID or scope.
+The server automatically updates rankings for explicitly public-ranked runs;
+do not try to publish, create new runs, or change credentials.
+
+Competition and evaluation sessions cannot be mixed or overwrite the opposite
+kind. Use separate names. The remaining competition workflow below applies only
+to competition sessions, not evaluations.
 
 ## Session Handling
 

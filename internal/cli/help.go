@@ -137,7 +137,7 @@ func globalFlags(path string) []helpFlag {
 		{Name: "--insecure-skip-tls-verify, -K", Description: "Disable TLS certificate verification for this command."},
 	}
 	if path == "auth login" || path == "evaluation auth login" {
-		flags = append([]helpFlag{{Name: "--api-base", Description: "HTTP(S) API origin or /agent/v1 base. Required for login.", Required: true}}, flags...)
+		flags = append([]helpFlag{{Name: "--api-base", Description: "HTTP(S) API base; evaluation uses the main-platform /api base or /evaluation/agent/v1. Required for login.", Required: true}}, flags...)
 	}
 	return flags
 }
@@ -221,7 +221,7 @@ func kongUsage(path []string) string {
 	}
 	usage := output.String()
 	globalUsage := "--session=NAME [--timeout=DURATION] [--insecure-skip-tls-verify]"
-	if strings.Join(path, " ") == "auth login" {
+	if strings.Join(path, " ") == "auth login" || strings.Join(path, " ") == "evaluation auth login" {
 		globalUsage = "--session=NAME --api-base=URL [--timeout=DURATION] [--insecure-skip-tls-verify]"
 	}
 	usage = strings.Replace(usage, "Usage: ctfpc9n-cli ", "Usage: ctfpc9n-cli "+globalUsage+" ", 1)

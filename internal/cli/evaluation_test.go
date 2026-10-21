@@ -102,3 +102,28 @@ func TestEvaluationChallengePagination(t *testing.T) {
 		t.Fatal(out.String())
 	}
 }
+
+func TestEvaluationReleaseHelpIsAvailableOfflineAndDocumentsLoginBase(t *testing.T) {
+	for _, topic := range [][]string{{"evaluation"}, {"evaluation", "auth", "login"}, {"evaluation", "run", "start"}, {"evaluation", "report"}, {"challenge", "list"}} {
+		var out bytes.Buffer
+		if code := Execute(append([]string{"help"}, topic...), nil, &out); code != 0 {
+			t.Fatalf("offline help %v: %s", topic, out.String())
+		}
+		var result struct {
+			OK   bool            `json:"ok"`
+			Data json.RawMessage `json:"data"`
+		}
+		if err := json.Unmarshal(out.Bytes(), &result); err != nil || !result.OK {
+			t.Fatalf("invalid help: %s", out.String())
+		}
+		if strings.Join(topic, " ") == "evaluation auth login" {
+			var help commandHelp
+			if err := json.Unmarshal(result.Data, &help); err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(help.Usage, "--api-base=URL") {
+				t.Fatalf("evaluation login usage omits required API base: %s", help.Usage)
+			}
+		}
+	}
+}

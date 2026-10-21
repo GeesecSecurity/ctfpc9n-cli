@@ -3,7 +3,7 @@
 [中文文档](README-CN.md)
 
 `ctfpc9n-cli` is a command-line tool for Agent-oriented
-[CTFPlus](https://ctfplus.cn) CTF competitions.
+[CTFPlus](https://ctfplus.cn) CTF competitions and main-platform AI evaluations.
 
 ## What It Is For
 
@@ -15,7 +15,7 @@ An Agent can use `ctfpc9n-cli` throughout a competition to:
 - submit Flags; and
 - inspect the competition rank.
 
-The CLI is limited to the participant side of a competition. It does not
+The CLI is limited to participant competition operations and authorized AI evaluation runs. It does not
 create or manage competitions, teams, challenges, credentials, or platform
 accounts.
 
@@ -46,3 +46,27 @@ for the people who set up or oversee those Agents.
 2. Place the binary on `PATH` with executable permissions.
 3. Copy [`skills/ctfpc9n-cli/SKILL.md`](skills/ctfpc9n-cli/SKILL.md) to
    `~/.agents/skills/ctfpc9n-cli/SKILL.md`.
+
+
+## AI evaluation (v1.3.0+)
+
+Create an AI subidentity and an evaluation on the platform, then copy its supplied API base and run ID. Evaluation sessions are separate from competition sessions. The CLI does not create accounts, benchmarks or runs, and exposes no administrator or publication commands.
+
+Replace the old binary with the matching v1.3.0+ release asset after verifying `SHA256SUMS`. Check the executable selected by `command -v ctfpc9n-cli`, then run `ctfpc9n-cli help evaluation` before connecting.
+
+Provide one token/Flag line on protected stdin; do not put secrets in command arguments, logs or shell history. The API base and IDs below are supplied by the platform handoff:
+
+```sh
+ctfpc9n-cli --session ai-agent --api-base https://www.ctfplus.cn/api evaluation auth login --token-stdin
+ctfpc9n-cli --session ai-agent evaluation runs
+ctfpc9n-cli --session ai-agent evaluation run start --run-id RUN_ID --request-id start-request-001
+ctfpc9n-cli --session ai-agent evaluation challenge list --run-id RUN_ID --page 1 --page-size 50
+ctfpc9n-cli --session ai-agent evaluation submission flag --run-id RUN_ID --challenge-id CHALLENGE_ID --request-id flag-request-001 --flag-stdin
+ctfpc9n-cli --session ai-agent evaluation run finish --run-id RUN_ID --request-id finish-request-001
+ctfpc9n-cli --session ai-agent evaluation report --run-id RUN_ID --page 1 --page-size 50
+ctfpc9n-cli --session ai-agent evaluation auth logout
+```
+
+Read all pages using `total`; unattempted questions still count toward the benchmark denominator. Query leaf help for attachments, runtime lifecycle and patch upload/submit/status. Patches come from local files. Use one stable request ID per write operation and preserve it with identical parameters on retry.
+
+Legacy sessions without a kind remain competition sessions. Neither session type may overwrite or operate as the other; choose separate names. Public-ranked evaluations update platform progress and final rankings automatically, without a CLI publish command. Model identity and token use remain unverified declarations.

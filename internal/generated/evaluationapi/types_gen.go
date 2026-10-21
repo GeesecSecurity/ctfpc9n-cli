@@ -113,6 +113,8 @@ type AIPatchResult struct {
 }
 
 type AIPublication struct {
+	Automatic      bool       `json:"automatic,optional,omitempty"`
+	Status         string     `json:"status,optional,omitempty"`
 	Hidden         bool       `json:"hidden,optional,omitempty"`
 	DirectionOnly  bool       `json:"directionOnly,optional,omitempty"`
 	Id             string     `json:"id"`
@@ -129,6 +131,7 @@ type AIPublication struct {
 }
 
 type AIQuery struct {
+	Stage         string `form:"stage,optional"`
 	Direction     string `form:"direction,optional"`
 	CandidateId   string `form:"candidateId,optional"`
 	RunId         string `form:"runId,optional"`
@@ -168,6 +171,7 @@ type AIReport struct {
 }
 
 type AIRun struct {
+	Visibility          string     `json:"visibility,optional,omitempty"`
 	Id                  string     `json:"id"`
 	AccountId           string     `json:"accountId"`
 	AccountName         string     `json:"accountName"`
@@ -209,6 +213,7 @@ type AITokens struct {
 }
 
 type AIWrite struct {
+	Visibility      string             `json:"visibility,optional"`
 	CandidateId     string             `json:"candidateId,optional"`
 	QuestionDetails []AIQuestionDetail `json:"questionDetails,optional"`
 	Page            int                `json:"page,optional"`

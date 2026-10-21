@@ -8,6 +8,10 @@ type AIAccount {
  CreatedAt int64 `json:"createdAt"`
 }
 
+type AIDeleteAccountResult {
+ Deleted bool `json:"deleted"`
+}
+
 type AICredential {
  Account AIAccount `json:"account"`
  Token string `json:"token,omitempty"`
@@ -88,10 +92,12 @@ type AIBenchmark {
 }
 
 type AIBenchmarkList {
+ AutomaticRankingAvailable bool `json:"automaticRankingAvailable,optional"`
  Items []AIBenchmark `json:"items"`
 }
 
 type AIRun {
+ Visibility string `json:"visibility,optional,omitempty"`
  Id string `json:"id"`
  AccountId string `json:"accountId"`
  AccountName string `json:"accountName"`
@@ -143,6 +149,8 @@ type AIChallengeList {
 }
 
 type AIPublication {
+ Automatic bool `json:"automatic,optional,omitempty"`
+ Status string `json:"status,optional,omitempty"`
  Hidden bool `json:"hidden,optional,omitempty"`
  DirectionOnly bool `json:"directionOnly,optional,omitempty"`
  Id string `json:"id"`
@@ -159,6 +167,8 @@ type AIPublication {
 }
 
 type AIRankRow {
+ Automatic bool `json:"automatic,optional,omitempty"`
+ Status string `json:"status,optional,omitempty"`
  Direction string `json:"direction,optional,omitempty"`
  QuestionCount int `json:"questionCount"`
  SolvedCount int `json:"solvedCount"`
@@ -179,6 +189,7 @@ type AIRankRow {
 }
 
 type AILeaderboard {
+ Stage string `json:"stage"`
  Applicable *bool `json:"applicable,optional,omitempty"`
  QuestionCount int `json:"questionCount"`
  Items []AIRankRow `json:"items"`
@@ -248,6 +259,7 @@ type AIIdentityWrite {
 }
 
 type AIWrite {
+ Visibility string `json:"visibility,optional"`
  CandidateId string `json:"candidateId,optional"`
  QuestionDetails []AIQuestionDetail `json:"questionDetails,optional"`
  Page int `json:"page,optional"`
@@ -274,6 +286,7 @@ type AIImport {
 }
 
 type AIQuery {
+ Stage string `form:"stage,optional"`
  Direction string `form:"direction,optional"`
  CandidateId string `form:"candidateId,optional"`
  RunId string `form:"runId,optional"`
@@ -333,6 +346,9 @@ service api {
 
  @handler aiDisableAccount
  post /disable (AIIdentityWrite) returns (AIAccount)
+
+ @handler aiDeleteAccount
+ post /delete (AIIdentityWrite) returns (AIDeleteAccountResult)
 
  @handler aiRotateCredential
  post /rotate (AIIdentityWrite) returns (AICredential)
