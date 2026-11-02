@@ -19,6 +19,7 @@ type AICredential {
 
 type AIAccountList {
  Items []AIAccount `json:"items"`
+ MaxAccounts int `json:"maxAccounts"`
 }
 
 type AIModel {
@@ -76,6 +77,9 @@ type AILimits {
 }
 
 type AIBenchmark {
+ ContentTag string `json:"contentTag,optional,omitempty"`
+ PlatformBankId string `json:"platformBankId,optional,omitempty"`
+ SyncStatus string `json:"syncStatus,optional,omitempty"`
  Source string `json:"source,optional,omitempty"`
  DefaultKey string `json:"defaultKey,optional,omitempty"`
  VersionStatus string `json:"versionStatus,optional,omitempty"`
@@ -97,6 +101,7 @@ type AIBenchmarkList {
 }
 
 type AIRun {
+ SyncStatus string `json:"syncStatus,optional,omitempty"`
  Visibility string `json:"visibility,optional,omitempty"`
  Id string `json:"id"`
  AccountId string `json:"accountId"`
@@ -124,7 +129,18 @@ type AIAttachment {
  Size int64 `json:"size"`
 }
 
+type AIAttempt {
+ Track string `json:"track"`
+ Sequence int `json:"sequence"`
+ Status string `json:"status"`
+ CreatedAt int64 `json:"createdAt"`
+}
 type AIChallenge {
+ Locked bool `json:"locked,optional,omitempty"`
+ LockedReason string `json:"lockedReason,optional,omitempty"`
+ AttackStatus string `json:"attackStatus,optional,omitempty"`
+ RepairStatus string `json:"repairStatus,optional,omitempty"`
+ History []AIAttempt `json:"history,optional,omitempty"`
  Tags []string `json:"tags,optional,omitempty"`
  Id string `json:"id"`
  Name string `json:"name"`
@@ -164,6 +180,16 @@ type AIPublication {
  ElapsedSeconds int64 `json:"elapsedSeconds"`
  PublishedAt int64 `json:"publishedAt"`
  Metadata AIMetadata `json:"metadata"`
+}
+
+type AIDirectionScore {
+ PublicationId string `json:"publicationId"`
+ Board string `json:"board"`
+ Track string `json:"track"`
+ Direction string `json:"direction"`
+ Score *float64 `json:"score,optional,omitempty"`
+ QuestionCount int `json:"questionCount"`
+ SolvedCount int `json:"solvedCount"`
 }
 
 type AIRankRow {
@@ -207,6 +233,7 @@ type AIReport {
  Run AIRun `json:"run"`
  Challenges []AIChallenge `json:"challenges"`
  Publications []AIPublication `json:"publications"`
+ DirectionScores []AIDirectionScore `json:"directionScores"`
  TrustNotice string `json:"trustNotice"`
 }
 
@@ -280,12 +307,34 @@ type AIWrite {
  Metadata *AIMetadata `json:"metadata,optional"`
 }
 
+type AICollectionBinding {
+ RequestId string `json:"requestId"`
+ PlatformBankId string `json:"platformBankId"`
+ Name string `json:"name"`
+}
+type AICollectionUpdate {
+ RequestId string `json:"requestId"`
+ BenchmarkId string `json:"benchmarkId"`
+ UpdateMode string `json:"updateMode"`
+ ExpectedContentTag string `json:"expectedContentTag"`
+ SnapshotJson string `json:"snapshotJson"`
+}
+type AICollectionQuestion {
+ Id string `json:"id"`
+ Name string `json:"name"`
+}
+type AICollectionPreview {
+ Benchmark AIBenchmark `json:"benchmark"`
+ RemovedQuestions []AICollectionQuestion `json:"removedQuestions"`
+}
 type AIImport {
  RequestId string `json:"requestId"`
  SnapshotJson string `json:"snapshotJson"`
 }
 
 type AIQuery {
+ Change string `form:"change,optional"`
+ Reason string `form:"reason,optional"`
  Stage string `form:"stage,optional"`
  Direction string `form:"direction,optional"`
  CandidateId string `form:"candidateId,optional"`
@@ -323,7 +372,12 @@ type AICandidateDiff {
  Change string `json:"change"`
  Reason string `json:"reason"`
 }
+type AICandidateSummary {
+ Changes map[string]int64 `json:"changes"`
+ Reasons map[string]int64 `json:"reasons"`
+}
 type AICandidatePreview {
+ Summary AICandidateSummary `json:"summary"`
  Items []AICandidateDiff `json:"items"`
  Total int64 `json:"total"`
 }
@@ -411,6 +465,12 @@ service api {
  get /defaults/preview (AIQuery) returns (AICandidatePreview)
  @handler aiDefaultsPublish
  post /defaults/publish (AIWrite) returns (AIDefaultCatalog)
+ @handler aiBindCollection
+ post /collections/bind (AICollectionBinding) returns (AIBenchmark)
+ @handler aiUpdateCollection
+ post /collections/update (AICollectionUpdate) returns (AIBenchmark)
+ @handler aiPreviewCollection
+ post /collections/preview (AICollectionUpdate) returns (AICollectionPreview)
  @handler aiImportBenchmark
  post /import (AIImport) returns (AIBenchmark)
 

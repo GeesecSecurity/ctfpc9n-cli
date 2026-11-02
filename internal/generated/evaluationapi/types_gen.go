@@ -16,7 +16,17 @@ type AIAttachment struct {
 	Size int64  `json:"size"`
 }
 
+type AIAttempt struct {
+	Track     string `json:"track"`
+	Sequence  int    `json:"sequence"`
+	Status    string `json:"status"`
+	CreatedAt int64  `json:"createdAt"`
+}
+
 type AIBenchmark struct {
+	ContentTag          string         `json:"contentTag,optional,omitempty"`
+	PlatformBankId      string         `json:"platformBankId,optional,omitempty"`
+	SyncStatus          string         `json:"syncStatus,optional,omitempty"`
 	Source              string         `json:"source,optional,omitempty"`
 	DefaultKey          string         `json:"defaultKey,optional,omitempty"`
 	VersionStatus       string         `json:"versionStatus,optional,omitempty"`
@@ -33,6 +43,11 @@ type AIBenchmark struct {
 }
 
 type AIChallenge struct {
+	Locked               bool           `json:"locked,optional,omitempty"`
+	LockedReason         string         `json:"lockedReason,optional,omitempty"`
+	AttackStatus         string         `json:"attackStatus,optional,omitempty"`
+	RepairStatus         string         `json:"repairStatus,optional,omitempty"`
+	History              []AIAttempt    `json:"history,optional,omitempty"`
 	Tags                 []string       `json:"tags,optional,omitempty"`
 	Id                   string         `json:"id"`
 	Name                 string         `json:"name"`
@@ -60,6 +75,16 @@ type AIDeclaredScore struct {
 	Score          *float64 `json:"score"`
 	MaxScore       *float64 `json:"maxScore"`
 	ElapsedSeconds *int64   `json:"elapsedSeconds"`
+}
+
+type AIDirectionScore struct {
+	PublicationId string   `json:"publicationId"`
+	Board         string   `json:"board"`
+	Track         string   `json:"track"`
+	Direction     string   `json:"direction"`
+	Score         *float64 `json:"score,optional,omitempty"`
+	QuestionCount int      `json:"questionCount"`
+	SolvedCount   int      `json:"solvedCount"`
 }
 
 type AIFlagResult struct {
@@ -131,6 +156,8 @@ type AIPublication struct {
 }
 
 type AIQuery struct {
+	Change        string `form:"change,optional"`
+	Reason        string `form:"reason,optional"`
 	Stage         string `form:"stage,optional"`
 	Direction     string `form:"direction,optional"`
 	CandidateId   string `form:"candidateId,optional"`
@@ -159,18 +186,20 @@ type AIQuestionScore struct {
 }
 
 type AIReport struct {
-	ChallengeTotal    int             `json:"challengeTotal"`
-	Page              int             `json:"page"`
-	PageSize          int             `json:"pageSize"`
-	ContentRestricted bool            `json:"contentRestricted"`
-	Benchmark         AIBenchmark     `json:"benchmark"`
-	Run               AIRun           `json:"run"`
-	Challenges        []AIChallenge   `json:"challenges"`
-	Publications      []AIPublication `json:"publications"`
-	TrustNotice       string          `json:"trustNotice"`
+	ChallengeTotal    int                `json:"challengeTotal"`
+	Page              int                `json:"page"`
+	PageSize          int                `json:"pageSize"`
+	ContentRestricted bool               `json:"contentRestricted"`
+	Benchmark         AIBenchmark        `json:"benchmark"`
+	Run               AIRun              `json:"run"`
+	Challenges        []AIChallenge      `json:"challenges"`
+	Publications      []AIPublication    `json:"publications"`
+	DirectionScores   []AIDirectionScore `json:"directionScores"`
+	TrustNotice       string             `json:"trustNotice"`
 }
 
 type AIRun struct {
+	SyncStatus          string     `json:"syncStatus,optional,omitempty"`
 	Visibility          string     `json:"visibility,optional,omitempty"`
 	Id                  string     `json:"id"`
 	AccountId           string     `json:"accountId"`

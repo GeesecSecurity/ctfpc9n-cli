@@ -48,10 +48,25 @@ ctfpc9n-cli --session ai-agent evaluation auth logout
 ```
 
 Only start a created run. Resume an already-running run without restarting it;
-finished runs are read-only. Query leaf help before runtime, attachment, Flag,
-patch and finish operations. Read all pages according to total. Always submit
-Flags and tokens through stdin; patches are uploaded from local files. Preserve
-request IDs on retries and never change the supplied run ID or scope.
+completed or timed_out runs are read-only by default. Resume a completed or
+timed_out run only when the user explicitly requests it; the resume period
+opens only new questions and questions that require retesting. Query leaf help
+before runtime, attachment, Flag, patch and finish operations. Read all pages
+according to total. Always submit Flags and tokens through stdin; patches are
+uploaded from local files. Preserve request IDs on retries and never change the
+supplied run ID or scope.
+
+Evaluation challenge safety rules:
+
+- In `challenge list` or `challenge get`, skip any item with `locked: true`; do
+  not submit a Flag, start or extend its runtime, or submit a patch.
+- If Flag submission returns `alreadySolved: true`, the challenge is already
+  passed and its score will not change; do not submit that challenge again.
+- If an operation returns `CONFLICT` with the message
+  `续测时段只开放新增或需重测的题目`, skip that challenge without retrying;
+  handle other `CONFLICT` errors according to the existing rules.
+- A challenge with `kind: "unavailable"` is not evaluable; skip it. This is
+  different from `locked`.
 The server automatically updates rankings for explicitly public-ranked runs;
 do not try to publish, create new runs, or change credentials.
 

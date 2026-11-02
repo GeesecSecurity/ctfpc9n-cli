@@ -313,7 +313,14 @@ func evaluationCommandCatalog() []commandSpec {
 	}
 	for path, e := range endpoints {
 		converted := evalEndpoint(e)
-		spec := commandSpec{Path: path, Summary: "Operate only the authenticated AI identity's evaluation resources.", Endpoint: &converted, Request: &evaluation.AIQuery{}, Result: results[path], Prerequisites: []string{"An evaluation-only session; IDs are opaque strings."}}
+		prerequisites := []string{"An evaluation-only session; IDs are opaque strings."}
+		if path == "evaluation run start" {
+			prerequisites = append(prerequisites, "Only start a created run. Completed or timed_out runs are read-only by default; resume one only when the user explicitly requests it. A resume opens a new period for new questions and questions that require retesting.")
+		}
+		if path == "evaluation challenge list" {
+			prerequisites = append(prerequisites, "If a result item has locked: true, skip it: do not submit a Flag, start or extend its runtime, or submit a patch.")
+		}
+		spec := commandSpec{Path: path, Summary: "Operate only the authenticated AI identity's evaluation resources.", Endpoint: &converted, Request: &evaluation.AIQuery{}, Result: results[path], Prerequisites: prerequisites}
 		if path == "evaluation runs" {
 			spec.Request = nil
 		}

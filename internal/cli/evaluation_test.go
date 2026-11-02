@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
@@ -124,6 +125,111 @@ func TestEvaluationReleaseHelpIsAvailableOfflineAndDocumentsLoginBase(t *testing
 			if !strings.Contains(help.Usage, "--api-base=URL") {
 				t.Fatalf("evaluation login usage omits required API base: %s", help.Usage)
 			}
+		}
+	}
+}
+
+func TestEvaluationHelpSchemasExposeResumeLockFields(t *testing.T) {
+	cases := []struct {
+		name   string
+		args   []string
+		fields []string
+	}{
+		{name: "challenge list", args: []string{"help", "evaluation", "challenge", "list"}, fields: []string{"locked", "lockedReason", "attackStatus"}},
+		{name: "challenge get", args: []string{"help", "evaluation", "challenge", "get"}, fields: []string{"locked", "lockedReason", "attackStatus"}},
+		{name: "submission flag", args: []string{"help", "evaluation", "submission", "flag"}, fields: []string{"alreadySolved"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var out bytes.Buffer
+			if code := Execute(tc.args, nil, &out); code != 0 {
+				t.Fatalf("help exit code = %d: %s", code, out.String())
+			}
+			var result struct {
+				OK   bool            `json:"ok"`
+				Data json.RawMessage `json:"data"`
+			}
+			if err := json.Unmarshal(out.Bytes(), &result); err != nil || !result.OK {
+				t.Fatalf("invalid help: %s", out.String())
+			}
+			var help commandHelp
+			if err := json.Unmarshal(result.Data, &help); err != nil {
+				t.Fatal(err)
+			}
+			schemaBytes, err := json.Marshal(help.ResultSchema)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, field := range tc.fields {
+				if !strings.Contains(string(schemaBytes), field) {
+					t.Errorf("result schema missing %q: %s", field, string(schemaBytes))
+				}
+			}
+		})
+	}
+}
+
+func TestEvaluationRunStartHelpDocumentsExplicitResumeRule(t *testing.T) {
+	var out bytes.Buffer
+	if code := Execute([]string{"help", "evaluation", "run", "start"}, nil, &out); code != 0 {
+		t.Fatalf("help exit code = %d: %s", code, out.String())
+	}
+	var result struct {
+		OK   bool        `json:"ok"`
+		Data commandHelp `json:"data"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &result); err != nil || !result.OK {
+		t.Fatalf("invalid help: %s", out.String())
+	}
+	prerequisites := strings.Join(result.Data.Prerequisites, " ")
+	for _, want := range []string{"completed", "timed_out", "explicitly", "new questions", "retest"} {
+		if !strings.Contains(strings.ToLower(prerequisites), strings.ToLower(want)) {
+			t.Errorf("prerequisites missing %q: %v", want, result.Data.Prerequisites)
+		}
+	}
+}
+
+func TestEvaluationLockedConflictIsNonRetryableAndPreservesMessage(t *testing.T) {
+	const lockedMessage = "续测时段只开放新增或需重测的题目"
+	t.Setenv("CTFPC9N_STATE_DIR", t.TempDir())
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"code":409,"msg":"` + lockedMessage + `"}`))
+	}))
+	defer server.Close()
+	if _, err := session.Save("eval-lock", session.Value{Kind: "evaluation", APIBase: server.URL + "/evaluation/agent/v1", Token: "private"}); err != nil {
+		t.Fatal(err)
+	}
+	var out bytes.Buffer
+	if code := Execute([]string{"--session", "eval-lock", "evaluation", "runtime", "start", "--run-id", "run-lock", "--challenge-id", "challenge-lock", "--request-id", "lock-0001"}, nil, &out); code != 1 {
+		t.Fatalf("exit code = %d, output = %s", code, out.String())
+	}
+	var result struct {
+		OK    bool `json:"ok"`
+		Error struct {
+			Code      string `json:"code"`
+			Message   string `json:"message"`
+			Retryable bool   `json:"retryable"`
+		} `json:"error"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &result); err != nil {
+		t.Fatal(err)
+	}
+	if result.OK || result.Error.Code != "CONFLICT" || result.Error.Retryable || result.Error.Message != "API error code=409: "+lockedMessage {
+		t.Fatalf("unexpected error mapping: %s", out.String())
+	}
+}
+
+func TestEvaluationSkillDocumentsResumeLockRules(t *testing.T) {
+	data, err := os.ReadFile("../../skills/ctfpc9n-cli/SKILL.md")
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	for _, want := range []string{"explicitly requests", "locked: true", "alreadySolved: true", "kind: \"unavailable\"", "CONFLICT"} {
+		if !strings.Contains(text, want) {
+			t.Errorf("skill missing %q", want)
 		}
 	}
 }
